@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Los 4 Amigos TGCT Challenge</title>
+  <title>LST74 Individual Golf League</title>
   <style>
     :root {
       --primary-dark: #334155;
@@ -159,7 +159,7 @@
 
 <div id="capture-area">
   <div class="header-block">
-    <div class="brand-main">Los 4 Amigos TGCT Challenge</div>
+    <div class="brand-main">LST74 LEAGUE</div>
     <div class="sub-brand">Season Order of Merit</div>
     <input type="text" id="venue-name" class="venue-input" placeholder="ENTER VENUE" oninput="saveState()">
   </div>
@@ -209,6 +209,28 @@
         </table>
       </div>
     </div>
+	
+	<!-- PLAYER STATS & MILESTONES TABLE -->
+	<div class="team-table-wrapper" style="margin-top: 15px;">
+	  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">PLAYER MILESTONES & STATS</h3>
+	  <div class="table-wrapper"> 
+		<table class="leaderboard-table" id="stats-table">
+		  <thead>
+			<tr>
+			  <th style="width:30px">POS</th>
+			  <th style="text-align:left; padding-left:8px; cursor:pointer;" onclick="sortStatsTable('name')">PLAYER ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#fef08a;" onclick="sortStatsTable('hio')">HiO ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#38bdf8;" onclick="sortStatsTable('alby')">ALBY ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#d97706;" onclick="sortStatsTable('eagle')">EAG ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#ef4444;" onclick="sortStatsTable('birdie')">BIRD ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#22c55e;" onclick="sortStatsTable('par')">PAR ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#94a3b8;" onclick="sortStatsTable('bogey')">BOG+ ↕</th>
+			</tr>
+		  </thead>
+		  <tbody id="stats-leaderboard-body"></tbody>
+		</table>
+	  </div>
+	</div>
 
     <div id="history-container"></div>
     <div id="backToTop" onclick="scrollToTop()">↑</div>
@@ -393,6 +415,7 @@ function updateCalculations(triggerSave = true) {
   });
 
   updateIndividualLeaderboard();
+  updateStatsLeaderboard();
   if (triggerSave && typeof window.saveState === 'function') window.saveState();
 }
 
@@ -455,6 +478,94 @@ function updateIndividualLeaderboard() {
   }).join('');
 }
 
+// Sorting state tracking for Stats Table
+let currentStatsSortColumn = 'eagle';
+let isStatsSortAscending = false;
+
+function calculateDetailedPlayerStats(p) {
+  const parInputs = document.querySelectorAll('.par-input');
+  let counts = { name: p.name, hio: 0, alby: 0, eagle: 0, birdie: 0, par: 0, bogey: 0, totalHolesPlayed: 0 };
+
+  [1, 2, 3, 4].forEach(rd => {
+    const rdScores = getRoundScores(p, rd);
+    rdScores.forEach((s, hIdx) => {
+      const score = parseInt(s);
+      const par = parseInt(parInputs[hIdx]?.value) || 4;
+
+      if (!isNaN(score) && score > 0) {
+        counts.totalHolesPlayed++;
+        const diff = score - par;
+
+        // Hole-In-One tracking
+        if (score === 1) counts.hio++;
+
+        // Relative Score categories
+        if (diff <= -3) {
+          counts.alby++;
+        } else if (diff === -2) {
+          counts.eagle++;
+        } else if (diff === -1) {
+          counts.birdie++;
+        } else if (diff === 0) {
+          counts.par++;
+        } else if (diff >= 1) {
+          counts.bogey++;
+        }
+      }
+    });
+  });
+
+  return counts;
+}
+
+function updateStatsLeaderboard() {
+  const tbody = document.getElementById('stats-leaderboard-body');
+  if (!tbody) return;
+
+  // Process stats for each player
+  let statsData = window.players.map(p => calculateDetailedPlayerStats(p));
+
+  // Sort the data based on active column selection
+  statsData.sort((a, b) => {
+    let valA = a[currentStatsSortColumn];
+    let valB = b[currentStatsSortColumn];
+
+    if (typeof valA === 'string') {
+      return isStatsSortAscending 
+        ? valA.localeCompare(valB) 
+        : valB.localeCompare(valA);
+    }
+
+    return isStatsSortAscending ? valA - valB : valB - valA;
+  });
+
+  // Render Table Rows
+  tbody.innerHTML = statsData.map((p, idx) => {
+    return `<tr>
+      <td style="font-weight:800; color:#cbd5e1;">${p.totalHolesPlayed > 0 ? (idx + 1) : '-'}</td>
+      <td class="player-leaderboard-name">${p.name}</td>
+      <td style="font-weight:900; color:#fef08a; background:rgba(254, 240, 138, 0.1);">${p.hio || '-'}</td>
+      <td style="font-weight:800; color:#38bdf8;">${p.alby || '-'}</td>
+      <td style="font-weight:800; color:#f59e0b;">${p.eagle || '-'}</td>
+      <td style="font-weight:800; color:#f87171;">${p.birdie || '-'}</td>
+      <td style="font-weight:800; color:#4ade80;">${p.par || '-'}</td>
+      <td style="font-weight:800; color:#cbd5e1;">${p.bogey || '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortStatsTable(columnKey) {
+  if (currentStatsSortColumn === columnKey) {
+    // Toggle Direction if same column clicked
+    isStatsSortAscending = !isStatsSortAscending;
+  } else {
+    currentStatsSortColumn = columnKey;
+    // Default to descending for numbers, ascending for player names
+    isStatsSortAscending = (columnKey === 'name');
+  }
+  updateStatsLeaderboard();
+}
+
 function renderHistory() {
   const histContainer = document.getElementById('history-container');
   if (!histContainer) return;
@@ -468,11 +579,17 @@ function renderHistory() {
 
   [...window.leagueHistory].reverse().forEach((entry) => {
     let rankingHtml = entry.rankings.map((p, idx) => {
-      let medal = (idx === 0) ? "🥇 " : (idx === 1) ? "🥈 " : (idx === 2) ? "🥉 " : (idx === 3) ? "4️⃣ " : "• ";
+      let medal = (idx === 0 && p.pointsAllocated > 0) ? "🥇 " : 
+                  (idx === 1 && p.pointsAllocated > 0) ? "🥈 " : 
+                  (idx === 2 && p.pointsAllocated > 0) ? "🥉 " : "• ";
+      
+      const ptColor = p.pointsAllocated > 0 ? '#fef08a' : '#cbd5e1';
+      const statusText = p.status === 'MC' ? ' [CUT]' : '';
+
       return `<div class="history-row">
-        <span style="font-weight:700">${medal}${p.name}</span>
+        <span style="font-weight:700">${medal}${p.name}${statusText}</span>
         <span>Score: ${p.score} (${p.relToPar})</span>
-        <span style="font-weight:800; color:#fef08a;">+${p.pointsAllocated} PTS</span>
+        <span style="font-weight:800; color:${ptColor};">+${p.pointsAllocated} PTS</span>
       </div>`;
     }).join('');
     
@@ -504,24 +621,63 @@ function deletePlayer(idx) {
 }
 
 function endEvent() {
-  if (!confirm("Finalize week and award points (1st: 25, 2nd: 15, 3rd: 10, 4th: 5)?")) return;
+  if (!confirm("Finalize week and award points (1st: 25, 2nd: 15, 3rd: 10, 4th: 5)?\n\nNote: Players who did not complete all 4 rounds will receive 0 points.")) return;
+  
   const venue = document.getElementById('venue-name').value || "Unknown Venue";
 
+  // Calculate scores and check if all 72 holes (4 rounds * 18 holes) were completed
   const eventStandings = window.players.map(p => {
     const stats = calculatePlayerStats(p);
-    return { name: p.name, score: stats.grandTotal, relToPar: stats.relToPar };
+    
+    // Count total completed holes across all 4 rounds
+    let completedHoles = 0;
+    [1, 2, 3, 4].forEach(rd => {
+      getRoundScores(p, rd).forEach(s => {
+        if (s !== '' && !isNaN(parseInt(s)) && parseInt(s) > 0) completedHoles++;
+      });
+    });
+
+    const madeCut = (completedHoles === 72);
+
+    return { 
+      name: p.name, 
+      score: stats.grandTotal, 
+      relToPar: stats.relToPar,
+      madeCut: madeCut
+    };
   }).filter(p => p.score > 0).sort((a, b) => a.score - b.score);
 
   const pointDistribution = [25, 15, 10, 5];
-  
-  const rankingsWithPoints = eventStandings.map((p, idx) => {
-    const pts = pointDistribution[idx] || 0;
+  let pointsAppliedCount = 0;
+
+  const rankingsWithPoints = eventStandings.map((p) => {
+    let pts = 0;
+
+    // Only award points if the player completed all 4 rounds (72 holes)
+    if (p.madeCut) {
+      pts = pointDistribution[pointsAppliedCount] || 0;
+      pointsAppliedCount++; // Move to the next point tier for eligible players
+    }
+
+    // Update season points ledger
     window.seasonPoints[p.name] = (window.seasonPoints[p.name] || 0) + pts;
-    return { ...p, pointsAllocated: pts };
+
+    return { 
+      name: p.name, 
+      score: p.score, 
+      relToPar: p.relToPar, 
+      pointsAllocated: pts,
+      status: p.madeCut ? 'FINISHED' : 'MC' // MC = Missed Cut
+    };
   });
 
-  window.leagueHistory.push({ title: `Week ${window.leagueHistory.length + 1} - ${venue}`, rankings: rankingsWithPoints });
+  // Push to Archive
+  window.leagueHistory.push({ 
+    title: `Week ${window.leagueHistory.length + 1} - ${venue}`, 
+    rankings: rankingsWithPoints 
+  });
 
+  // Clear Scorecards for Next Event
   window.players.forEach(p => {
     p.r1Scores = Array(18).fill('');
     p.r2Scores = Array(18).fill('');
@@ -530,10 +686,12 @@ function endEvent() {
   });
 
   document.getElementById('venue-name').value = '';
+  
   if (typeof window.saveState === 'function') window.saveState();
   renderPlayers();
   renderHistory();
-  alert("Event Finalized and Standings Updated!");
+  
+  alert("Event Finalized! Points awarded to full-4-round finishers.");
 }
 
 function exportData() {
