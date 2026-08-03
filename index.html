@@ -189,7 +189,7 @@
 
   <div class="dashboard-grid">
     <div class="team-table-wrapper">
-      <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">INDIVIDUAL LEADERBOARD</h3>
+      <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">LEADERBOARD</h3>
       <div class="table-wrapper"> 
         <table class="leaderboard-table">
           <thead>
@@ -212,7 +212,7 @@
 	
 	<!-- PLAYER STATS & MILESTONES TABLE -->
 	<div class="team-table-wrapper" style="margin-top: 15px;">
-	  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">PLAYER MILESTONES & STATS</h3>
+	  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">PLAYER STATS</h3>
 	  <div class="table-wrapper"> 
 		<table class="leaderboard-table" id="stats-table">
 		  <thead>
@@ -544,7 +544,7 @@ function updateStatsLeaderboard() {
     return `<tr>
       <td style="font-weight:800; color:#cbd5e1;">${p.totalHolesPlayed > 0 ? (idx + 1) : '-'}</td>
       <td class="player-leaderboard-name">${p.name}</td>
-      <td style="font-weight:900; color:#fef08a; background:rgba(254, 240, 138, 0.1);">${p.hio || '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.hio || '-'}</td>
       <td style="font-weight:800; color:#38bdf8;">${p.alby || '-'}</td>
       <td style="font-weight:800; color:#f59e0b;">${p.eagle || '-'}</td>
       <td style="font-weight:800; color:#f87171;">${p.birdie || '-'}</td>
