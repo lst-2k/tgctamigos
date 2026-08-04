@@ -357,28 +357,31 @@ function applyState(state) {
 	  if (typeof window.saveState === 'function') window.saveState();
 	}
 
-function renderPlayers() {
-  const tbody = document.getElementById('players-body');
-  tbody.innerHTML = '';
-  const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
+	function renderPlayers() {
+	  const tbody = document.getElementById('players-body');
+	  tbody.innerHTML = '';
+	  const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
 
-  let tabCounter = 1; // Explicit Tab Navigation Tracking
+	  let tabCounter = 1; // Explicit Tab Navigation Tracking
 
-  window.players.forEach((p, pIdx) => {
-    let playerHtml = '';
+	  window.players.forEach((p, pIdx) => {
+		let playerHtml = '';
 
-    [1, 2, 3, 4].forEach(rdNum => {
-      const scores = getRoundScores(p, rdNum);
-      const isFirst = rdNum === 1;
+		[1, 2, 3, 4].forEach(rdNum => {
+	  const scores = getRoundScores(p, rdNum);
+	  const isFirst = rdNum === 1;
+	  const isSecond = rdNum === 2; // <-- Check if it's Round 2
 
-      playerHtml += `<tr class="${isFirst ? 'player-header-row' : ''}">
-        <td class="admin-only" style="${isAdmin ? 'display:table-cell' : 'display:none'}">
-          ${isFirst ? `<button class="del-btn" onclick="deletePlayer(${pIdx})">✕</button>` : ''}
-        </td>
-        <td style="text-align:left; padding-left:4px">
-		  ${isFirst ? `
-			<input class="player-name-input" value="${p.name}" ${isAdmin ? '' : 'readonly'} onchange="window.players[${pIdx}].name=this.value; saveState();">
-			<div style="margin-top: 2px;">
+	  playerHtml += `<tr class="${isFirst ? 'player-header-row' : ''}">
+		<td class="admin-only" style="${isAdmin ? 'display:table-cell' : 'display:none'}">
+		  ${isFirst ? `<button class="del-btn" onclick="deletePlayer(${pIdx})">✕</button>` : ''}
+		</td>
+		<td style="text-align:left; padding-left:4px">
+		  ${isFirst ? `<input class="player-name-input" value="${p.name}" ${isAdmin ? '' : 'readonly'} onchange="window.players[${pIdx}].name=this.value; saveState();">` : ''}
+		  
+		  ${/* Render Link Button on R2 row instead */ ''}
+		  ${isSecond ? `
+			<div style="display:flex; align-items:center; gap:4px; padding-left:4px;">
 			  <a href="${p.profileUrl || '#'}" target="_blank" id="player-link-${pIdx}" class="player-link-btn" style="${p.profileUrl ? 'display:inline-block;' : 'display:none;'}">
 				${p.linkLabel || 'Profile'} ↗
 			  </a>
@@ -388,16 +391,16 @@ function renderPlayers() {
 			</div>
 		  ` : ''}
 		</td>
-        <td><span class="rd-tag tag-r${rdNum}">R${rdNum}</span></td>`;
+		<td><span class="rd-tag tag-r${rdNum}">R${rdNum}</span></td>`;
 
-      for(let h=0; h<18; h++) {
-        playerHtml += `<td><input type="number" class="score-input" tabindex="${tabCounter++}" data-p="${pIdx}" data-r="${rdNum}" data-h="${h}" value="${scores[h] || ''}" oninput="updateCalculations()"></td>`;
-      }
+	  for(let h=0; h<18; h++) {
+		playerHtml += `<td><input type="number" class="score-input" tabindex="${tabCounter++}" data-p="${pIdx}" data-r="${rdNum}" data-h="${h}" value="${scores[h] || ''}" oninput="updateCalculations()"></td>`;
+	  }
 
-      playerHtml += `<td style="font-weight:700" id="tot-gross-${pIdx}-r${rdNum}">0</td>
-                    <td style="font-size:0.75rem !important;" id="tot-rel-${pIdx}-r${rdNum}">-</td>
-      </tr>`;
-    });
+	  playerHtml += `<td style="font-weight:700" id="tot-gross-${pIdx}-r${rdNum}">0</td>
+					<td style="font-size:0.75rem !important;" id="tot-rel-${pIdx}-r${rdNum}">-</td>
+	  </tr>`;
+	});
 
     playerHtml += `<tr class="player-summary-row">
       <td class="admin-only" style="${isAdmin ? 'display:table-cell' : 'display:none'}"></td>
