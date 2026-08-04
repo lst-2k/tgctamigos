@@ -140,6 +140,36 @@
     #logo-container { text-align: center; padding: 0; width: 100%; overflow: hidden; }
     #logo-container img { width: 100%; height: auto; display: block; max-width: 400px; margin: 0 auto; }
     #scorecard thead th { position: sticky; top: 0; z-index: 10; }
+	
+	/* Player External Link Button */
+	.player-link-btn {
+	  font-size: 0.55rem;
+	  font-weight: 800;
+	  color: #38bdf8;
+	  background: rgba(56, 189, 248, 0.15);
+	  border: 1px solid rgba(56, 189, 248, 0.3);
+	  padding: 1px 5px;
+	  border-radius: 3px;
+	  text-decoration: none;
+	  text-transform: uppercase;
+	  letter-spacing: 0.5px;
+	  transition: all 0.2s ease;
+	}
+
+	.player-link-btn:hover {
+	  background: rgba(56, 189, 248, 0.3);
+	  color: #ffffff;
+	}
+
+	.edit-link-trigger {
+	  font-size: 0.55rem !important;
+	  padding: 1px 4px !important;
+	  background: #475569 !important;
+	  color: #cbd5e1 !important;
+	  border: 1px solid #64748b !important;
+	  border-radius: 3px;
+	  cursor: pointer;
+	}
   </style>
 </head>
 <body>
@@ -308,6 +338,25 @@ function applyState(state) {
   }
 }
 
+	function editPlayerLink(pIdx) {
+	  const player = window.players[pIdx];
+	  
+	  const currentLabel = player.linkLabel || "Profile";
+	  const currentUrl = player.profileUrl || "https://";
+
+	  const newLabel = prompt("Enter Button Label (e.g. Stats, Twitch, Channel):", currentLabel);
+	  if (newLabel === null) return; // User cancelled
+
+	  const newUrl = prompt("Enter External URL (including https://):", currentUrl);
+	  if (newUrl === null) return; // User cancelled
+
+	  player.linkLabel = newLabel.trim() || "Profile";
+	  player.profileUrl = newUrl.trim();
+
+	  renderPlayers();
+	  if (typeof window.saveState === 'function') window.saveState();
+	}
+
 function renderPlayers() {
   const tbody = document.getElementById('players-body');
   tbody.innerHTML = '';
@@ -327,8 +376,18 @@ function renderPlayers() {
           ${isFirst ? `<button class="del-btn" onclick="deletePlayer(${pIdx})">✕</button>` : ''}
         </td>
         <td style="text-align:left; padding-left:4px">
-          ${isFirst ? `<input class="player-name-input" value="${p.name}" ${isAdmin ? '' : 'readonly'} onchange="window.players[${pIdx}].name=this.value; saveState();">` : ''}
-        </td>
+		  ${isFirst ? `
+			<input class="player-name-input" value="${p.name}" ${isAdmin ? '' : 'readonly'} onchange="window.players[${pIdx}].name=this.value; saveState();">
+			<div style="margin-top: 2px;">
+			  <a href="${p.profileUrl || '#'}" target="_blank" id="player-link-${pIdx}" class="player-link-btn" style="${p.profileUrl ? 'display:inline-block;' : 'display:none;'}">
+				${p.linkLabel || 'Profile'} ↗
+			  </a>
+			  ${isAdmin ? `
+				<button class="edit-link-trigger" onclick="editPlayerLink(${pIdx})" title="Edit Player Link">⚙️ Link</button>
+			  ` : ''}
+			</div>
+		  ` : ''}
+		</td>
         <td><span class="rd-tag tag-r${rdNum}">R${rdNum}</span></td>`;
 
       for(let h=0; h<18; h++) {
