@@ -273,8 +273,14 @@ window.players = [];
 window.seasonPoints = {}; 
 window.leagueHistory = []; // Renamed from "history" to avoid browser conflict
 
+// Replace your existing 'const isAdmin = ...' line near the top of your script with this:
+const ADMIN_PASSWORD = 'superSecret123';
+const isAdmin = new URLSearchParams(window.location.search).get('admin') === ADMIN_PASSWORD;
+
 function checkAdmin() {
-  const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
+  const adminKey = new URLSearchParams(window.location.search).get('admin');
+  const isAdmin = (adminKey === ADMIN_PASSWORD);
+
   if (isAdmin) {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'table-cell');
     document.querySelectorAll('button.admin-only').forEach(el => el.style.display = 'inline-block');
@@ -843,19 +849,22 @@ function resetScores() {
   });
 
   // Attach saveState to window object
-  window.saveState = function() {
-    if (isUpdatingFromFirebase) return;
+	window.saveState = function() {
+	  const adminKey = new URLSearchParams(window.location.search).get('admin');
+	  
+	  // Reject save if the password in the URL doesn't match
+	  if (adminKey !== 'superSecret123' || isUpdatingFromFirebase) return;
 
-    const state = { 
-      players: window.players || [], 
-      seasonPoints: window.seasonPoints || {}, 
-      leagueHistory: window.leagueHistory || [],
-      venueName: document.getElementById('venue-name')?.value || '',
-      pars: Array.from(document.querySelectorAll('.par-input')).map(i => i.value)
-    };
+	  const state = { 
+		players: window.players || [], 
+		seasonPoints: window.seasonPoints || {}, 
+		leagueHistory: window.leagueHistory || [],
+		venueName: document.getElementById('venue-name')?.value || '',
+		pars: Array.from(document.querySelectorAll('.par-input')).map(i => i.value)
+	  };
 
-    set(leagueRef, state);
-  };
+	  set(leagueRef, state);
+	};
 </script>
 </body>
 </html>
