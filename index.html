@@ -515,72 +515,33 @@ function calculatePlayerStats(p) {
 
 function updateIndividualLeaderboard() {
   const tbody = document.getElementById('individual-leaderboard-body');
-  if (!tbody) return;
 
-  const parInputs = document.querySelectorAll('.par-input');
-
-  // 1. Calculate totals for each player
-  let leaderboardData = window.players.map(p => {
-    let grandTotal = 0;
-    let relToParNum = 0;
-    let holesCompleted = 0;
-
-    [1, 2, 3, 4].forEach(rd => {
-      const rdScores = getRoundScores(p, rd);
-      rdScores.forEach((s, hIdx) => {
-        const score = parseInt(s);
-        const par = parseInt(parInputs[hIdx]?.value) || 4;
-
-        if (!isNaN(score) && score > 0) {
-          grandTotal += score;
-          relToParNum += (score - par);
-          holesCompleted++;
-        }
-      });
-    });
-
-    // Format Relative to Par text (e.g., -5, E, +3)
-    let relToParStr = 'E';
-    if (relToParNum < 0) relToParStr = `${relToParNum}`;
-    else if (relToParNum > 0) relToParStr = `+${relToParNum}`;
-    else relToParStr = 'E';
-
-    return {
-      name: p.name,
-      grandTotal: grandTotal,
-      relToParNum: relToParNum,
-      relToParStr: relToParStr,
-      holesCompleted: holesCompleted
-    };
+  const processed = window.players.map(p => {
+    const stats = calculatePlayerStats(p);
+    const seasonPts = window.seasonPoints[p.name] || 0;
+    return { name: p.name, ...stats, seasonPts };
   });
 
-  // 2. Sort according to lowest score to par (Best Score First)
-  leaderboardData.sort((a, b) => {
-    // Unplayed players go to the bottom
-    if (a.holesCompleted === 0 && b.holesCompleted === 0) return 0;
-    if (a.holesCompleted === 0) return 1;
-    if (b.holesCompleted === 0) return -1;
-
-    // Primary Sort: Lowest Score Relative to Par (-10 comes before -2, -2 before +4)
-    if (a.relToParNum !== b.relToParNum) {
-      return a.relToParNum - b.relToParNum;
-    }
-
-    // Secondary Tie-breaker: Total Gross Score
+  processed.sort((a, b) => {
+    if (a.grandTotal === 0) return 1;
+    if (b.grandTotal === 0) return -1;
     return a.grandTotal - b.grandTotal;
   });
 
-  // 3. Render Sorted Leaderboard Rows
-  tbody.innerHTML = leaderboardData.map((p, idx) => {
-    const hasPlayed = p.holesCompleted > 0;
-    const relColor = p.relToParNum < 0 ? '#f87171' : (p.relToParNum === 0 ? '#4ade80' : '#cbd5e1');
+  tbody.innerHTML = processed.map((p, idx) => {
+    const relText = p.grandTotal === 0 ? '-' : p.relToPar === 0 ? 'E' : p.relToPar > 0 ? `+${p.relToPar}` : `${p.relToPar}`;
+    const pos = p.grandTotal > 0 ? (idx + 1) : '-';
 
     return `<tr>
-      <td style="font-weight:800; color:#cbd5e1;">${hasPlayed ? (idx + 1) : '-'}</td>
+      <td style="font-weight:800; color:#cbd5e1;">${pos}</td>
       <td class="player-leaderboard-name">${p.name}</td>
-      <td style="font-weight:800;">${hasPlayed ? p.grandTotal : '-'}</td>
-      <td style="font-weight:800; color:${relColor};">${hasPlayed ? p.relToParStr : '-'}</td>
-      <td style="font-size:0.7rem; color:#94a3b8;">${p.holesCompleted}/72</td>
+      <td>${p.r1 || '-'}</td>
+      <td>${p.r2 || '-'}</td>
+      <td>${p.r3 || '-'}</td>
+      <td>${p.r4 || '-'}</td>
+      <td style="font-weight:900; background:rgba(255,255,255,0.05);">${p.grandTotal || '-'}</td>
+      <td style="font-weight:800; color:${p.relToPar < 0 ? '#4ade80' : p.relToPar > 0 ? '#f87171' : '#f8fafc'}">${relText}</td>
+      <td style="font-weight:900; color:#fef08a; background:rgba(217,119,6,0.15);">${p.seasonPts}</td>
     </tr>`;
   }).join('');
 }
