@@ -525,7 +525,7 @@ function updateIndividualLeaderboard() {
   processed.sort((a, b) => {
     if (a.grandTotal === 0) return 1;
     if (b.grandTotal === 0) return -1;
-    return a.grandTotal - b.grandTotal;
+    return a.relToPar - b.relToPar;
   });
 
   tbody.innerHTML = processed.map((p, idx) => {
@@ -841,6 +841,7 @@ function resetScores() {
   const ADMIN_EMAIL = "admin@los4amigos.app";
 
   let isUpdatingFromFirebase = false;
+  let hasReceivedFirebaseData = false; // guards against saving an empty state before the real data has loaded
 
   onAuthStateChanged(auth, (user) => {
     if (typeof window.applyAdminUI === 'function') window.applyAdminUI(!!user);
@@ -870,12 +871,17 @@ function resetScores() {
       }
       isUpdatingFromFirebase = false;
     }
+    hasReceivedFirebaseData = true; // fires on first response too, even if the DB is genuinely empty
   });
 
   // Attach saveState to window object
   window.saveState = function() {
     if (isUpdatingFromFirebase) return;
     if (!auth.currentUser) return; // not logged in - nothing to save, rules would reject it anyway
+    if (!hasReceivedFirebaseData) {
+      console.warn("Save blocked: still waiting for the initial data load from Firebase.");
+      return;
+    }
 
     const state = { 
       players: window.players || [], 
