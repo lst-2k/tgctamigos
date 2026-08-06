@@ -233,7 +233,7 @@
               <th style="width:35px">R3</th>
               <th style="width:35px">R4</th>
               <th style="width:45px">TOTAL</th>
-              <th style="width:45px">+/- PAR</th>
+              <th style="width:45px">PAR</th>
               <th style="width:45px; color:#fef08a;">PTS</th>
             </tr>
           </thead>
@@ -241,6 +241,27 @@
         </table>
       </div>
     </div>
+	
+	<!-- EVENT HONORS & FINISHES TABLE -->
+	<div class="team-table-wrapper" style="margin-top: 15px;">
+	  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">EVENT HONORS & FINISHES</h3>
+	  <div class="table-wrapper"> 
+		<table class="leaderboard-table" id="finishes-table">
+		  <thead>
+			<tr>
+			  <th style="width:30px">POS</th>
+			  <th style="text-align:left; padding-left:8px; cursor:pointer;" onclick="sortFinishesTable('name')">PLAYER ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#38bdf8;" onclick="sortFinishesTable('events')">EVS ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#fef08a;" onclick="sortFinishesTable('wins')">1ST 🏆 ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#e2e8f0;" onclick="sortFinishesTable('runnerUp')">2ND 🥈 ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#f59e0b;" onclick="sortFinishesTable('third')">3RD 🥉 ↕</th>
+			  <th style="width:45px; cursor:pointer; color:#f87171;" onclick="sortFinishesTable('mc')">M/C ✂️ ↕</th>
+			</tr>
+		  </thead>
+		  <tbody id="finishes-leaderboard-body"></tbody>
+		</table>
+	  </div>
+	</div>
 	
 	<!-- PLAYER STATS & MILESTONES TABLE -->
 	<div class="team-table-wrapper" style="margin-top: 15px;">
@@ -311,6 +332,7 @@ function applyState(state) {
       r: activeEl.getAttribute('data-r'),
       h: activeEl.getAttribute('data-h')
     };
+	updateFinishesLeaderboard();
   }
 
   // 2. Load state
@@ -484,6 +506,7 @@ function updateCalculations(triggerSave = true) {
 
   updateIndividualLeaderboard();
   updateStatsLeaderboard();
+  updateFinishesLeaderboard();
   if (triggerSave && typeof window.saveState === 'function') window.saveState();
 }
 
@@ -544,6 +567,97 @@ function updateIndividualLeaderboard() {
       <td style="font-weight:900; color:#fef08a; background:rgba(217,119,6,0.15);">${p.seasonPts}</td>
     </tr>`;
   }).join('');
+}
+
+// Sorting state tracking for Finishes Table
+let currentFinishesSortColumn = 'wins';
+let isFinishesSortAscending = false;
+
+function calculatePlayerFinishes(player) {
+  let counts = {
+    name: player.name,
+    events: 0,
+    wins: 0,
+    runnerUp: 0,
+    third: 0,
+    mc: 0
+  };
+
+  if (!window.leagueHistory || window.leagueHistory.length === 0) return counts;
+
+  window.leagueHistory.forEach(event => {
+    if (!event.rankings) return;
+
+    // Find player in this historical event
+    const playerEntryIdx = event.rankings.findIndex(r => r.name === player.name);
+    
+    if (playerEntryIdx !== -1) {
+      const entry = event.rankings[playerEntryIdx];
+      counts.events++;
+
+      if (entry.status === 'MC') {
+        counts.mc++;
+      } else if (entry.pointsAllocated > 0) {
+        if (playerEntryIdx === 0) counts.wins++;
+        else if (playerEntryIdx === 1) counts.runnerUp++;
+        else if (playerEntryIdx === 2) counts.third++;
+      }
+    }
+  });
+
+  return counts;
+}
+
+function updateFinishesLeaderboard() {
+  const tbody = document.getElementById('finishes-leaderboard-body');
+  if (!tbody) return;
+
+  let finishesData = window.players.map(p => calculatePlayerFinishes(p));
+
+  // Sort the table data
+  finishesData.sort((a, b) => {
+    let valA = a[currentFinishesSortColumn];
+    let valB = b[currentFinishesSortColumn];
+
+    if (typeof valA === 'string') {
+      return isFinishesSortAscending 
+        ? valA.localeCompare(valB) 
+        : valB.localeCompare(valA);
+    }
+
+    // Tie-breaker when sorting by wins: compare 2nd places, then 3rd places
+    if (currentFinishesSortColumn === 'wins' && valA === valB) {
+      if (a.runnerUp !== b.runnerUp) {
+        return isFinishesSortAscending ? a.runnerUp - b.runnerUp : b.runnerUp - a.runnerUp;
+      }
+      return isFinishesSortAscending ? a.third - b.third : b.third - a.third;
+    }
+
+    return isFinishesSortAscending ? valA - valB : valB - valA;
+  });
+
+  // Render Table Rows
+  tbody.innerHTML = finishesData.map((p, idx) => {
+    return `<tr>
+      <td style="font-weight:800; color:#cbd5e1;">${p.events > 0 ? (idx + 1) : '-'}</td>
+      <td class="player-leaderboard-name">${p.name}</td>
+      <td style="font-weight:800; color:#cbd5e1;">${p.events || '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.wins || '-'}</td>
+      <td style="font-weight:800; color:#e2e8f0;">${p.runnerUp || '-'}</td>
+      <td style="font-weight:800; color:#f59e0b;">${p.third || '-'}</td>
+      <td style="font-weight:800; color:#f87171;">${p.mc || '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortFinishesTable(columnKey) {
+  if (currentFinishesSortColumn === columnKey) {
+    isFinishesSortAscending = !isFinishesSortAscending;
+  } else {
+    currentFinishesSortColumn = columnKey;
+    isFinishesSortAscending = (columnKey === 'name');
+  }
+  updateFinishesLeaderboard();
 }
 
 // Sorting state tracking for Stats Table
@@ -663,7 +777,9 @@ function renderHistory() {
     
     histContainer.innerHTML += `<details style="background:#475569; margin-bottom:8px; border-radius:6px; border:1px solid var(--glass-border);"><summary style="padding:10px; font-weight:800; cursor:pointer; background:#1e293b; list-style:none; display:flex; justify-content:space-between; font-size:0.75rem;"><span>${entry.title}</span><span style="color:#cbd5e1;">VIEW ▼</span></summary><div>${rankingHtml}</div></details>`;
   });
+  updateFinishesLeaderboard();
 }
+
 
 function addPlayer() {
   const name = prompt("Player Name:");
