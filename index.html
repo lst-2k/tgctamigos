@@ -629,7 +629,7 @@ function updateIndividualLeaderboard() {
       <td style="font-weight:700; color:#cbd5e1;">${p.r4}</td>
       <td style="font-weight:800;">${p.holesCompleted > 0 ? p.grandTotal : '-'}</td>
       <td style="font-weight:800; color:${relColor};">${p.holesCompleted > 0 ? p.relToParStr : '-'}</td>
-      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `+${p.weekPts}` : '-'}</td>
+      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `${p.weekPts}` : '-'}</td>
       <td style="font-weight:800; color:#fef08a;">${p.totalPts}</td>
     </tr>`;
   }).join('');
