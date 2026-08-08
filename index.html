@@ -924,7 +924,7 @@ function updateProvisionalLeaderboard() {
   .filter(p => p.completedHoles > 0)
   .sort((a, b) => a.relToParNum - b.relToParNum || a.grandTotal - b.grandTotal);
 
-  // 2. Map provisional points for this week
+  // 2. Map provisional points for eligible players who finished 72 holes
   let provisionalWeekPoints = {};
   let pointsAppliedCount = 0;
 
@@ -936,6 +936,23 @@ function updateProvisionalLeaderboard() {
       provisionalWeekPoints[p.name] = 0;
     }
   });
+
+  // 3. Update window.seasonPoints with current totals so saveState() can broadcast it
+  window.players.forEach(p => {
+    const bankedPts = window.seasonPoints[p.name] || 0;
+    const provPts = provisionalWeekPoints[p.name] || 0;
+    // Keep provisional points calculated locally
+    p.provisionalPoints = provPts;
+  });
+
+  // 4. Render local UI table
+  updateIndividualLeaderboard();
+
+  // 5. Broadcast changes to Firebase live for all devices!
+  if (typeof window.saveState === 'function') {
+    window.saveState();
+  }
+}
 
   // 3. Render Leaderboard including banked points + current week's provisional points
   const tbody = document.getElementById('individual-leaderboard-body');
