@@ -223,25 +223,28 @@
   <div class="dashboard-grid">
     <div class="team-table-wrapper">
       <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">LEADERBOARD</h3>
-      <div class="table-wrapper"> 
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th style="width:30px">POS</th>
-              <th style="text-align:left; padding-left:8px;">PLAYER</th>
-              <th style="width:35px">R1</th>
-              <th style="width:35px">R2</th>
-              <th style="width:35px">R3</th>
-              <th style="width:35px">R4</th>
-              <th style="width:45px">TOTAL</th>
-              <th style="width:45px">PAR</th>
-              <th style="width:45px; color:#fef08a;">PTS</th>
-            </tr>
-          </thead>
-          <tbody id="individual-leaderboard-body"></tbody>
-        </table>
-      </div>
-    </div>
+      <div class="team-table-wrapper">
+  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">SEASON LEADERBOARD</h3>
+  <div class="table-wrapper">
+    <table class="leaderboard-table" id="individual-leaderboard">
+      <thead>
+        <tr>
+          <th style="width:25px">POS</th>
+          <th style="text-align:left; padding-left:8px;">PLAYER</th>
+          <th style="width:35px">R1</th>
+          <th style="width:35px">R2</th>
+          <th style="width:35px">R3</th>
+          <th style="width:35px">R4</th>
+          <th style="width:40px">TOT</th>
+          <th style="width:40px">PAR</th>
+          <th style="width:50px; color:#38bdf8;">WK PTS</th>
+          <th style="width:55px; color:#fef08a;">TOT PTS</th>
+        </tr>
+      </thead>
+      <tbody id="individual-leaderboard-body"></tbody>
+    </table>
+  </div>
+</div>
 	
 	<!-- EVENT HONOURS & FINISHES TABLE -->
 	<div class="team-table-wrapper" style="margin-top: 15px;">
@@ -547,8 +550,6 @@ function updateIndividualLeaderboard() {
     let grandTotal = 0;
     let relToParNum = 0;
     let holesCompleted = 0;
-    
-    // Track individual round scores
     let roundTotals = { r1: '-', r2: '-', r3: '-', r4: '-' };
 
     [1, 2, 3, 4].forEach(rd => {
@@ -569,15 +570,19 @@ function updateIndividualLeaderboard() {
         }
       });
 
-      // Display round score if all 18 holes of that round were played
       if (rdHoles === 18) {
         roundTotals[`r${rd}`] = rdSum;
       } else if (rdHoles > 0) {
-        roundTotals[`r${rd}`] = `${rdSum}*`; // Asterisk indicates in-progress round
+        roundTotals[`r${rd}`] = `${rdSum}*`;
       }
     });
 
-    const pts = window.seasonPoints[p.name] || 0;
+    // Banked points from completed past weeks
+    const bankedPts = window.seasonPoints[p.name] || 0;
+    // Live provisional points for the active week
+    const weekPts = p.provisionalPoints || 0;
+    // Total accumulated season points
+    const totalPts = bankedPts + weekPts;
 
     let relToParStr = 'E';
     if (relToParNum < 0) relToParStr = `${relToParNum}`;
@@ -593,15 +598,16 @@ function updateIndividualLeaderboard() {
       relToParNum: relToParNum,
       relToParStr: relToParStr,
       holesCompleted: holesCompleted,
-      points: pts
+      weekPts: weekPts,
+      totalPts: totalPts
     };
   });
 
-  // Sort Primary: Highest Points
+  // Sort Primary: Total Accumulated Points (Highest First)
   // Secondary: Lowest Score Relative to Par
   leaderboardData.sort((a, b) => {
-    if (b.points !== a.points) {
-      return b.points - a.points;
+    if (b.totalPts !== a.totalPts) {
+      return b.totalPts - a.totalPts;
     }
     if (a.holesCompleted === 0 && b.holesCompleted === 0) return 0;
     if (a.holesCompleted === 0) return 1;
@@ -609,9 +615,9 @@ function updateIndividualLeaderboard() {
     return a.relToParNum - b.relToParNum;
   });
 
-  // Render Rows matching the 9 table columns exactly
+  // Render Rows matching all 10 columns
   tbody.innerHTML = leaderboardData.map((p, idx) => {
-    const hasPlayed = p.holesCompleted > 0 || p.points > 0;
+    const hasPlayed = p.holesCompleted > 0 || p.totalPts > 0;
     const relColor = p.relToParNum < 0 ? '#f87171' : (p.relToParNum === 0 ? '#4ade80' : '#cbd5e1');
 
     return `<tr>
@@ -623,7 +629,8 @@ function updateIndividualLeaderboard() {
       <td style="font-weight:700; color:#cbd5e1;">${p.r4}</td>
       <td style="font-weight:800;">${p.holesCompleted > 0 ? p.grandTotal : '-'}</td>
       <td style="font-weight:800; color:${relColor};">${p.holesCompleted > 0 ? p.relToParStr : '-'}</td>
-      <td style="font-weight:800; color:#fef08a;">${p.points} PTS</td>
+      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `+${p.weekPts}` : '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.totalPts}</td>
     </tr>`;
   }).join('');
 }
