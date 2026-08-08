@@ -937,22 +937,21 @@ function updateProvisionalLeaderboard() {
     }
   });
 
-  // 3. Update window.seasonPoints with current totals so saveState() can broadcast it
+  // 3. Store provisional points locally on each player object
   window.players.forEach(p => {
-    const bankedPts = window.seasonPoints[p.name] || 0;
     const provPts = provisionalWeekPoints[p.name] || 0;
-    // Keep provisional points calculated locally
     p.provisionalPoints = provPts;
   });
 
   // 4. Render local UI table
-  updateIndividualLeaderboard();
+  if (typeof updateIndividualLeaderboard === 'function') {
+    updateIndividualLeaderboard();
+  }
 
   // 5. Broadcast changes to Firebase live for all devices!
   if (typeof window.saveState === 'function') {
     window.saveState();
   }
-}
 
   // 3. Render Leaderboard including banked points + current week's provisional points
   const tbody = document.getElementById('individual-leaderboard-body');
