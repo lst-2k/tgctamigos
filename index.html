@@ -223,8 +223,6 @@
   <div class="dashboard-grid">
     <div class="team-table-wrapper">
       <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">LEADERBOARD</h3>
-      <div class="team-table-wrapper">
-  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">SEASON LEADERBOARD</h3>
   <div class="table-wrapper">
     <table class="leaderboard-table" id="individual-leaderboard">
       <thead>
@@ -546,10 +544,29 @@ function updateIndividualLeaderboard() {
 
   const parInputs = document.querySelectorAll('.par-input');
 
-  let leaderboardData = window.players.map(p => {
+  const cutBonusMap = {
+    'cc-a': 20, 'cc-b': 18, 'cc-c': 16, 'cc-d': 14, 'cc-e': 12,
+    'cc-f': 10, 'cc-g': 8,  'cc-h': 6,  'cc-i': 4,  'cc-j': 2
+  };
+
+  const pointDistribution = [25, 15, 10, 5];
+
+  // Helper function: extracts "cc-x" from p.linkLabel (e.g. "TOUR CC-H" -> "cc-h")
+  const getPlayerTag = (p) => {
+    const raw = String(p.linkLabel || p.tag || '').toLowerCase();
+    const match = raw.match(/cc-?[a-j]/i);
+    if (match) {
+      const letter = match[0].replace(/[^a-z]/gi, '').slice(-1);
+      return 'cc-' + letter;
+    }
+    return '';
+  };
+
+  // 1. Calculate scores & hole counts for all players
+  let playerData = window.players.map(p => {
     let grandTotal = 0;
     let relToParNum = 0;
-    let holesCompleted = 0;
+    let completedHoles = 0;
     let roundTotals = { r1: '-', r2: '-', r3: '-', r4: '-' };
 
     [1, 2, 3, 4].forEach(rd => {
@@ -565,7 +582,7 @@ function updateIndividualLeaderboard() {
           rdSum += score;
           grandTotal += score;
           relToParNum += (score - par);
-          holesCompleted++;
+          completedHoles++;
           rdHoles++;
         }
       });
@@ -577,60 +594,79 @@ function updateIndividualLeaderboard() {
       }
     });
 
-    // Banked points from completed past weeks
-    const bankedPts = window.seasonPoints[p.name] || 0;
-    // Live provisional points for the active week
-    const weekPts = p.provisionalPoints || 0;
-    // Total accumulated season points
-    const totalPts = bankedPts + weekPts;
-
     let relToParStr = 'E';
     if (relToParNum < 0) relToParStr = `${relToParNum}`;
     else if (relToParNum > 0) relToParStr = `+${relToParNum}`;
 
     return {
       name: p.name,
-      r1: roundTotals.r1,
-      r2: roundTotals.r2,
-      r3: roundTotals.r3,
-      r4: roundTotals.r4,
+      tagKey: getPlayerTag(p),
+      roundTotals: roundTotals,
       grandTotal: grandTotal,
       relToParNum: relToParNum,
       relToParStr: relToParStr,
-      holesCompleted: holesCompleted,
+      completedHoles: completedHoles,
+      madeCut: completedHoles === 72,
+      bankedPts: window.seasonPoints[p.name] || 0
+    };
+  });
+
+  // 2. Rank active players by score to calculate position + cut bonus points
+  let rankedActivePlayers = [...playerData]
+    .filter(p => p.completedHoles > 0)
+    .sort((a, b) => a.relToParNum - b.relToParNum || a.grandTotal - b.grandTotal);
+
+  let weekPointsMap = {};
+  let posCount = 0;
+
+  rankedActivePlayers.forEach(p => {
+    if (p.madeCut) {
+      const posPts = pointDistribution[posCount] || 0;
+      posCount++;
+      const bonusPts = cutBonusMap[p.tagKey] || 0;
+      weekPointsMap[p.name] = posPts + bonusPts;
+    } else {
+      weekPointsMap[p.name] = 0;
+    }
+  });
+
+  // 3. Attach calculated weekly & total points to players
+  let finalLeaderboard = playerData.map(p => {
+    const weekPts = weekPointsMap[p.name] || 0;
+    const totalPts = p.bankedPts + weekPts;
+
+    return {
+      ...p,
       weekPts: weekPts,
       totalPts: totalPts
     };
   });
 
-  // Sort Primary: Total Accumulated Points (Highest First)
-  // Secondary: Lowest Score Relative to Par
-  leaderboardData.sort((a, b) => {
-    if (b.totalPts !== a.totalPts) {
-      return b.totalPts - a.totalPts;
-    }
-    if (a.holesCompleted === 0 && b.holesCompleted === 0) return 0;
-    if (a.holesCompleted === 0) return 1;
-    if (b.holesCompleted === 0) return -1;
+  // 4. Sort Leaderboard by Total Season Points (Highest First), then lowest score
+  finalLeaderboard.sort((a, b) => {
+    if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+    if (a.completedHoles === 0 && b.completedHoles === 0) return 0;
+    if (a.completedHoles === 0) return 1;
+    if (b.completedHoles === 0) return -1;
     return a.relToParNum - b.relToParNum;
   });
 
-  // Render Rows matching all 10 columns
-  tbody.innerHTML = leaderboardData.map((p, idx) => {
-    const hasPlayed = p.holesCompleted > 0 || p.totalPts > 0;
+  // 5. Render HTML table rows
+  tbody.innerHTML = finalLeaderboard.map((p, idx) => {
+    const hasPlayed = p.completedHoles > 0 || p.totalPts > 0;
     const relColor = p.relToParNum < 0 ? '#f87171' : (p.relToParNum === 0 ? '#4ade80' : '#cbd5e1');
 
     return `<tr>
       <td style="font-weight:800; color:#cbd5e1;">${hasPlayed ? (idx + 1) : '-'}</td>
       <td class="player-leaderboard-name">${p.name}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.r1}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.r2}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.r3}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.r4}</td>
-      <td style="font-weight:800;">${p.holesCompleted > 0 ? p.grandTotal : '-'}</td>
-      <td style="font-weight:800; color:${relColor};">${p.holesCompleted > 0 ? p.relToParStr : '-'}</td>
-      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `${p.weekPts}` : '-'}</td>
-      <td style="font-weight:800; color:#fef08a;">${p.totalPts}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r1}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r2}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r3}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r4}</td>
+      <td style="font-weight:800;">${p.completedHoles > 0 ? p.grandTotal : '-'}</td>
+      <td style="font-weight:800; color:${relColor};">${p.completedHoles > 0 ? p.relToParStr : '-'}</td>
+      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `+${p.weekPts}` : '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.totalPts} PTS</td>
     </tr>`;
   }).join('');
 }
@@ -902,6 +938,22 @@ function updateProvisionalLeaderboard() {
   const parInputs = document.querySelectorAll('.par-input');
   const pointDistribution = [25, 15, 10, 5];
 
+  const cutBonusMap = {
+    'cc-a': 20, 'cc-b': 18, 'cc-c': 16, 'cc-d': 14, 'cc-e': 12,
+    'cc-f': 10, 'cc-g': 8,  'cc-h': 6,  'cc-i': 4,  'cc-j': 2
+  };
+
+  // Helper function to extract "cc-x" from p.linkLabel (e.g. "TOUR CC-H")
+  const getPlayerTag = (p) => {
+    const raw = String(p.linkLabel || p.tag || '').toLowerCase();
+    const match = raw.match(/cc-?[a-j]/i);
+    if (match) {
+      const letter = match[0].replace(/[^a-z]/gi, '').slice(-1);
+      return 'cc-' + letter;
+    }
+    return '';
+  };
+
   // 1. Calculate live standings for current active week
   let liveStandings = window.players.map(p => {
     let grandTotal = 0;
@@ -920,8 +972,11 @@ function updateProvisionalLeaderboard() {
       });
     });
 
+    const tagKey = getPlayerTag(p);
+
     return {
       name: p.name,
+      tagKey: tagKey,
       grandTotal: grandTotal,
       relToParNum: relToParNum,
       completedHoles: completedHoles,
@@ -931,23 +986,30 @@ function updateProvisionalLeaderboard() {
   .filter(p => p.completedHoles > 0)
   .sort((a, b) => a.relToParNum - b.relToParNum || a.grandTotal - b.grandTotal);
 
-  // 2. Map provisional points for eligible players who finished 72 holes
+  // 2. Map provisional points (Position Points + Tag Cut Bonus)
   let provisionalWeekPoints = {};
   let pointsAppliedCount = 0;
 
   liveStandings.forEach(p => {
+    let totalPts = 0;
+
     if (p.madeCut) {
-      provisionalWeekPoints[p.name] = pointDistribution[pointsAppliedCount] || 0;
+      // Finish position points (25, 15, 10, 5)
+      const posPts = pointDistribution[pointsAppliedCount] || 0;
       pointsAppliedCount++;
-    } else {
-      provisionalWeekPoints[p.name] = 0;
+
+      // Tag Cut Bonus points (e.g., cc-h = 6)
+      const bonusPts = cutBonusMap[p.tagKey] || 0;
+
+      totalPts = posPts + bonusPts;
     }
+
+    provisionalWeekPoints[p.name] = totalPts;
   });
 
   // 3. Store provisional points locally on each player object
   window.players.forEach(p => {
-    const provPts = provisionalWeekPoints[p.name] || 0;
-    p.provisionalPoints = provPts;
+    p.provisionalPoints = provisionalWeekPoints[p.name] || 0;
   });
 
   // 4. Render local UI table
@@ -955,7 +1017,7 @@ function updateProvisionalLeaderboard() {
     updateIndividualLeaderboard();
   }
 
-  // 5. Broadcast changes to Firebase live for all devices!
+  // 5. Broadcast to Firebase live
   if (typeof window.saveState === 'function') {
     window.saveState();
   }
@@ -1045,12 +1107,26 @@ function updateProvisionalLeaderboard() {
 }
 
 function endEvent() {
-  if (!confirm("Finalize week and award points (1st: 25, 2nd: 15, 3rd: 10, 4th: 5)?\n\nNote: Players who did not complete all 4 rounds (72 holes) receive 0 points.")) return;
-  
+  if (!confirm("Finalize week and award points (Position Points + Tag Cut Bonuses)?\n\nNote: Players who did not complete all 4 rounds (72 holes) receive 0 points.")) return;
+
   const venue = document.getElementById('venue-name').value || "Unknown Venue";
   const parInputs = document.querySelectorAll('.par-input');
 
-  // Calculate scores relative to par
+  const cutBonusMap = {
+    'cc-a': 20, 'cc-b': 18, 'cc-c': 16, 'cc-d': 14, 'cc-e': 12,
+    'cc-f': 10, 'cc-g': 8,  'cc-h': 6,  'cc-i': 4,  'cc-j': 2
+  };
+
+  const getPlayerTag = (p) => {
+    const raw = String(p.linkLabel || p.tag || '').toLowerCase();
+    const match = raw.match(/cc-?[a-j]/i);
+    if (match) {
+      const letter = match[0].replace(/[^a-z]/gi, '').slice(-1);
+      return 'cc-' + letter;
+    }
+    return '';
+  };
+
   const eventStandings = window.players.map(p => {
     let grandTotal = 0;
     let relToParNum = 0;
@@ -1068,14 +1144,15 @@ function endEvent() {
       });
     });
 
-    const madeCut = (completedHoles === 72);
+    const tagKey = getPlayerTag(p);
 
     return { 
-      name: p.name, 
+      name: p.name,
+      tagKey: tagKey,
       grandTotal: grandTotal, 
       relToParNum: relToParNum,
-      madeCut: madeCut,
-      completedHoles: completedHoles
+      completedHoles: completedHoles,
+      madeCut: completedHoles === 72
     };
   })
   .filter(p => p.completedHoles > 0)
@@ -1084,43 +1161,43 @@ function endEvent() {
   const pointDistribution = [25, 15, 10, 5];
   let pointsAppliedCount = 0;
 
-  // Inside endEvent(), update the rankingsWithPoints mapping:
+  const rankingsWithPoints = eventStandings.map((p) => {
+    let pts = 0;
 
-const rankingsWithPoints = eventStandings.map((p) => {
-  let pts = 0;
+    if (p.madeCut) {
+      const posPts = pointDistribution[pointsAppliedCount] || 0;
+      pointsAppliedCount++;
 
-  if (p.madeCut) {
-    pts = pointDistribution[pointsAppliedCount] || 0;
-    pointsAppliedCount++;
-  }
+      const bonusPts = cutBonusMap[p.tagKey] || 0;
+      pts = posPts + bonusPts;
+    }
 
-  window.seasonPoints[p.name] = (window.seasonPoints[p.name] || 0) + pts;
+    // Accumulate season points
+    window.seasonPoints[p.name] = (window.seasonPoints[p.name] || 0) + pts;
 
-  let relStr = p.relToParNum < 0 ? `${p.relToParNum}` : (p.relToParNum > 0 ? `+${p.relToParNum}` : 'E');
+    let relStr = p.relToParNum < 0 ? `${p.relToParNum}` : (p.relToParNum > 0 ? `+${p.relToParNum}` : 'E');
 
-  // Preserve individual hole scores for lifetime stats tracking
-  const playerObj = window.players.find(pl => pl.name === p.name);
-  let holeScores = [];
-  
-  if (playerObj) {
-    [1, 2, 3, 4].forEach(rd => {
-      const rdScores = getRoundScores(playerObj, rd);
-      rdScores.forEach((s, hIdx) => {
-        const par = parseInt(parInputs[hIdx]?.value) || 4;
-        if (s) holeScores.push({ score: s, par: par });
+    const playerObj = window.players.find(pl => pl.name === p.name);
+    let holeScores = [];
+    if (playerObj) {
+      [1, 2, 3, 4].forEach(rd => {
+        const rdScores = getRoundScores(playerObj, rd);
+        rdScores.forEach((s, hIdx) => {
+          const par = parseInt(parInputs[hIdx]?.value) || 4;
+          if (s) holeScores.push({ score: s, par: par });
+        });
       });
-    });
-  }
+    }
 
-  return { 
-    name: p.name, 
-    score: p.grandTotal, 
-    relToPar: relStr, 
-    pointsAllocated: pts,
-    status: p.madeCut ? 'FINISHED' : 'MC',
-    holeScores: holeScores // <-- Saved for stats accumulation!
-  };
-});
+    return { 
+      name: p.name, 
+      score: p.grandTotal, 
+      relToPar: relStr, 
+      pointsAllocated: pts,
+      status: p.madeCut ? 'FINISHED' : 'MC',
+      holeScores: holeScores
+    };
+  });
 
   // Archive event
   window.leagueHistory.push({ 
@@ -1128,12 +1205,13 @@ const rankingsWithPoints = eventStandings.map((p) => {
     rankings: rankingsWithPoints 
   });
 
-  // Clear current scorecards for next week
+  // Reset current active scores for next week
   window.players.forEach(p => {
     p.r1Scores = Array(18).fill('');
     p.r2Scores = Array(18).fill('');
     p.r3Scores = Array(18).fill('');
     p.r4Scores = Array(18).fill('');
+    p.provisionalPoints = 0;
   });
 
   document.getElementById('venue-name').value = '';
@@ -1144,7 +1222,7 @@ const rankingsWithPoints = eventStandings.map((p) => {
   updateIndividualLeaderboard();
   updateFinishesLeaderboard();
   
-  alert("Event Finalized! Points allocated.");
+  alert("Event Finalized! Position & Cut Bonus points awarded.");
 }
 
 function exportData() {
