@@ -258,6 +258,25 @@
 	  text-align: left !important;
 	  padding-left: 10px !important;
 	}
+	/* Only apply pointer cursor and underline to the main Leaderboard table */
+	#individual-leaderboard .player-leaderboard-name {
+	  cursor: pointer;
+	  color: #38bdf8;
+	  text-decoration: underline;
+	  text-underline-offset: 3px;
+	}
+
+	#individual-leaderboard .player-leaderboard-name:hover {
+	  color: #fef08a;
+	}
+
+	/* Ensure player names in other tables stay default (no underline, no cursor pointer) */
+	#finishes-leaderboard .player-leaderboard-name,
+	#player-stats-leaderboard .player-leaderboard-name {
+	  cursor: default;
+	  color: #f8fafc;
+	  text-decoration: none !important;
+	}
   </style>
 </head>
 <body>
@@ -755,17 +774,17 @@ function updateIndividualLeaderboard() {
     const relColor = p.relToParNum < 0 ? '#f87171' : (p.relToParNum === 0 ? '#4ade80' : '#cbd5e1');
 
     return `<tr>
-      <td style="font-weight:800; color:#cbd5e1;">${hasPlayed ? (idx + 1) : '-'}</td>
-      <td class="player-leaderboard-name">${p.name}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r1}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r2}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r3}</td>
-      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r4}</td>
-      <td style="font-weight:800;">${p.completedHoles > 0 ? p.grandTotal : '-'}</td>
-      <td style="font-weight:800; color:${relColor};">${p.completedHoles > 0 ? p.relToParStr : '-'}</td>
-      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `+${p.weekPts}` : '-'}</td>
-      <td style="font-weight:800; color:#fef08a;">${p.totalPts}</td>
-    </tr>`;
+  <td style="font-weight:800; color:#cbd5e1;">${hasPlayed ? (idx + 1) : '-'}</td>
+  <td class="player-leaderboard-name" onclick="openPlayerProfile('${p.name}')">${p.name}</td>
+  <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r1}</td>
+  <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r2}</td>
+  <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r3}</td>
+  <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r4}</td>
+  <td style="font-weight:800;">${p.completedHoles > 0 ? p.grandTotal : '-'}</td>
+  <td style="font-weight:800; color:${relColor};">${p.completedHoles > 0 ? p.relToParStr : '-'}</td>
+  <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `+${p.weekPts}` : '-'}</td>
+  <td style="font-weight:800; color:#fef08a;">${p.totalPts}</td>
+</tr>`;
   }).join('');
 }
 
@@ -1439,6 +1458,153 @@ function endEvent() {
   alert("Event Finalized! Position & Cut Bonus points awarded.");
 }
 
+function openPlayerProfile(playerName) {
+  const modal = document.getElementById('player-profile-modal');
+  if (!modal) return;
+
+  const player = window.players?.find(p => p.name === playerName);
+  if (!player) return;
+
+  let totalEvents = 0, wins = 0, runnerUp = 0, third = 0, mcCount = 0;
+  let eagles = 0, birdies = 0, bogies = 0;
+  let historyRowsHtml = '';
+
+  // 1. PROCESS ARCHIVED EVENTS
+  if (window.leagueHistory && window.leagueHistory.length > 0) {
+    window.leagueHistory.forEach(event => {
+      if (!event.rankings) return;
+      const idx = event.rankings.findIndex(r => r.name === playerName);
+      if (idx !== -1) {
+        const entry = event.rankings[idx];
+        totalEvents++;
+
+        if (entry.status === 'MC') {
+          mcCount++;
+        } else if (entry.pointsAllocated > 0) {
+          if (idx === 0) wins++;
+          else if (idx === 1) runnerUp++;
+          else if (idx === 2) third++;
+        }
+
+        // Parse hole stats & compute rounds R1..R4
+        let rTotals = ['-', '-', '-', '-'];
+        if (entry.holeScores && entry.holeScores.length > 0) {
+          entry.holeScores.forEach(h => {
+            const score = parseInt(h.score);
+            const par = parseInt(h.par) || 4;
+            if (!isNaN(score) && score > 0) {
+              const diff = score - par;
+              if (diff <= -2) eagles++;
+              else if (diff === -1) birdies++;
+              else if (diff === 1) bogies++;
+            }
+          });
+
+          // Break 18-hole score blocks into R1, R2, R3, R4 totals
+          for (let r = 0; r < 4; r++) {
+            const rHoles = entry.holeScores.slice(r * 18, (r + 1) * 18);
+            if (rHoles.length === 18 && rHoles.every(h => !isNaN(parseInt(h.score)) && parseInt(h.score) > 0)) {
+              rTotals[r] = rHoles.reduce((acc, h) => acc + parseInt(h.score), 0);
+            }
+          }
+        }
+
+        const relColor = entry.relToPar?.startsWith('-') ? '#f87171' : (entry.relToPar === 'E' ? '#4ade80' : '#cbd5e1');
+
+        historyRowsHtml += `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); height:28px;">
+            <td style="text-align:left; padding-left:8px; font-weight:700; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${event.title || 'Archived Event'}
+            </td>
+            <td style="text-align:center; color:#cbd5e1;">${rTotals[0]}</td>
+            <td style="text-align:center; color:#cbd5e1;">${rTotals[1]}</td>
+            <td style="text-align:center; color:#cbd5e1;">${rTotals[2]}</td>
+            <td style="text-align:center; color:#cbd5e1;">${rTotals[3]}</td>
+            <td style="text-align:center; font-weight:800; color:#fff;">${entry.score || '-'}</td>
+            <td style="text-align:center; font-weight:800; color:${relColor};">${entry.relToPar || '-'}</td>
+          </tr>
+        `;
+      }
+    });
+  }
+
+  // 2. PROCESS CURRENT ACTIVE WEEK
+  const parInputs = document.querySelectorAll('.par-input');
+  let currentRounds = ['-', '-', '-', '-'];
+  let currentGrandTotal = 0;
+  let currentCompletedHoles = 0;
+
+  [1, 2, 3, 4].forEach((rd, rIdx) => {
+    const rdScores = getRoundScores(player, rd);
+    let rdSum = 0, rdHoles = 0;
+    rdScores.forEach(s => {
+      const score = parseInt(s);
+      if (!isNaN(score) && score > 0) {
+        rdSum += score;
+        rdHoles++;
+      }
+    });
+    if (rdHoles === 18) {
+      currentRounds[rIdx] = rdSum;
+      currentGrandTotal += rdSum;
+      currentCompletedHoles += 18;
+    }
+  });
+
+  if (currentCompletedHoles > 0) {
+    totalEvents++;
+    const currentCourseName = document.getElementById('course-name')?.value || 'Current Event';
+    const totalPar = Array.from(parInputs).reduce((acc, inp) => acc + (parseInt(inp.value) || 4), 0) * (currentCompletedHoles / 18);
+    const diff = currentGrandTotal - totalPar;
+    const relStr = diff < 0 ? `${diff}` : (diff === 0 ? 'E' : `+${diff}`);
+    const relColor = diff < 0 ? '#f87171' : (diff === 0 ? '#4ade80' : '#cbd5e1');
+
+    historyRowsHtml = `
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05); height:28px; background:rgba(56,189,248,0.05);">
+        <td style="text-align:left; padding-left:8px; font-weight:700; color:#38bdf8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${currentCourseName} *
+        </td>
+        <td style="text-align:center; color:#cbd5e1;">${currentRounds[0]}</td>
+        <td style="text-align:center; color:#cbd5e1;">${currentRounds[1]}</td>
+        <td style="text-align:center; color:#cbd5e1;">${currentRounds[2]}</td>
+        <td style="text-align:center; color:#cbd5e1;">${currentRounds[3]}</td>
+        <td style="text-align:center; font-weight:800; color:#fff;">${currentGrandTotal}</td>
+        <td style="text-align:center; font-weight:800; color:${relColor};">${relStr}</td>
+      </tr>
+    ` + historyRowsHtml;
+  }
+
+  // Fallback if no history is recorded
+  if (!historyRowsHtml) {
+    historyRowsHtml = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#94a3b8;">No event history available.</td></tr>`;
+  }
+
+  // Update Points and Populate Modal Elements
+  const bankedPts = window.seasonPoints?.[player.name] || 0;
+  const weekPts = player.provisionalPoints || 0;
+
+  document.getElementById('modal-player-name').innerText = player.name;
+  document.getElementById('modal-player-tag').innerText = player.linkLabel || player.tag || 'TOUR MEMBER';
+  document.getElementById('modal-pts').innerText = `${bankedPts + weekPts} PTS`;
+  document.getElementById('modal-events').innerText = totalEvents;
+  document.getElementById('modal-podiums').innerText = `${wins}W / ${wins + runnerUp + third}P`;
+  document.getElementById('modal-mc').innerText = mcCount;
+  document.getElementById('modal-eagles').innerText = eagles;
+  document.getElementById('modal-birdies').innerText = birdies;
+  document.getElementById('modal-bogies').innerText = bogies;
+  document.getElementById('modal-history-body').innerHTML = historyRowsHtml;
+
+  modal.style.display = 'flex';
+}
+
+function closePlayerProfile() {
+  const modal = document.getElementById('player-profile-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+window.openPlayerProfile = openPlayerProfile;
+window.closePlayerProfile = closePlayerProfile;
+
 function exportData() {
   const state = { players: window.players, seasonPoints: window.seasonPoints, leagueHistory: window.leagueHistory, venueName: document.getElementById('venue-name').value };
   const blob = new Blob([JSON.stringify(state)], {type: "application/json"});
@@ -1574,5 +1740,62 @@ function resetScores() {
     });
   };
 </script>
+<!-- Player Profile Modal -->
+<div id="player-profile-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px);" onclick="if(event.target === this) closePlayerProfile();">
+  <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; width:90%; max-width:540px; max-height:90vh; display:flex; flex-direction:column; padding:20px; color:#f8fafc; position:relative; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
+    <button onclick="closePlayerProfile()" style="position:absolute; top:12px; right:12px; background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer;">✖</button>
+    
+    <div id="modal-profile-header" style="text-align:center; padding-bottom:12px; border-bottom:1px solid #334155;">
+      <h2 id="modal-player-name" style="margin:0; color:#fef08a; font-size:1.4rem;">-</h2>
+      <span id="modal-player-tag" style="color:#38bdf8; font-size:0.8rem; font-weight:700;">-</span>
+    </div>
+
+    <!-- Stats Grid -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0;">
+      <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
+        <span style="font-size:0.65rem; color:#94a3b8; display:block;">SEASON POINTS</span>
+        <strong id="modal-pts" style="font-size:1.1rem; color:#fef08a;">-</strong>
+      </div>
+      <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
+        <span style="font-size:0.65rem; color:#94a3b8; display:block;">EVENTS PLAYED</span>
+        <strong id="modal-events" style="font-size:1.1rem; color:#cbd5e1;">-</strong>
+      </div>
+      <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
+        <span style="font-size:0.65rem; color:#94a3b8; display:block;">WINS / PODIUMS</span>
+        <strong id="modal-podiums" style="font-size:1.1rem; color:#38bdf8;">-</strong>
+      </div>
+      <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
+        <span style="font-size:0.65rem; color:#94a3b8; display:block;">MISSED CUTS</span>
+        <strong id="modal-mc" style="font-size:1.1rem; color:#f87171;">-</strong>
+      </div>
+    </div>
+
+    <!-- Scoring Breakdown -->
+    <div style="display:flex; justify-content:space-around; background:#0f172a; padding:8px; border-radius:6px; text-align:center; font-size:0.75rem; margin-bottom:12px;">
+      <div>🦅 Eagles: <strong id="modal-eagles" style="color:#fef08a;">0</strong></div>
+      <div>🐥 Birdies: <strong id="modal-birdies" style="color:#38bdf8;">0</strong></div>
+      <div>⚠️ Bogies: <strong id="modal-bogies" style="color:#f87171;">0</strong></div>
+    </div>
+
+    <!-- Event History Table Section -->
+    <h4 style="margin:4px 0 8px 0; font-size:0.8rem; color:#cbd5e1; text-align:center;">TOURNAMENT HISTORY</h4>
+    <div style="overflow-y:auto; flex-grow:1; max-height:220px; background:#0f172a; border-radius:6px; border:1px solid #334155;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.75rem; table-layout:fixed;">
+        <thead>
+          <tr style="background:#1e293b; color:#94a3b8; border-bottom:1px solid #334155; height:28px;">
+            <th style="width:34%; text-align:left; padding-left:8px;">VENUE</th>
+            <th style="width:10%; text-align:center;">R1</th>
+            <th style="width:10%; text-align:center;">R2</th>
+            <th style="width:10%; text-align:center;">R3</th>
+            <th style="width:10%; text-align:center;">R4</th>
+            <th style="width:13%; text-align:center;">TOT</th>
+            <th style="width:13%; text-align:center;">PAR</th>
+          </tr>
+        </thead>
+        <tbody id="modal-history-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 </body>
 </html>
