@@ -1484,6 +1484,12 @@ document.addEventListener('input', (e) => {
   }
 });
 
+// Helper to safely set element text without throwing errors if an ID is missing
+function setElementText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = text;
+}
+
 function openPlayerProfile(playerName) {
   const modal = document.getElementById('player-profile-modal');
   if (!modal) return;
@@ -1673,24 +1679,25 @@ function openPlayerProfile(playerName) {
   }
 
   // Update Modal Values
-  const bankedPts = window.seasonPoints?.[player.name] || 0;
+	const bankedPts = window.seasonPoints?.[player.name] || 0;
   const weekPts = player.provisionalPoints || 0;
 
-  document.getElementById('modal-player-name').innerText = player.name;
-  document.getElementById('modal-player-tag').innerText = player.linkLabel || player.tag || 'TOUR MEMBER';
-  document.getElementById('modal-pts').innerText = `${bankedPts + weekPts} PTS`;
-  document.getElementById('modal-events').innerText = totalEvents;
-  document.getElementById('modal-rounds').innerText = completedRounds;
-  document.getElementById('modal-avg-score').innerText = avgScore;
-  document.getElementById('modal-podiums').innerText = `${wins}W / ${wins + runnerUp + third}P`;
-  document.getElementById('modal-mc').innerText = mcCount;
-  document.getElementById('modal-eagles').innerText = eagles;
-  document.getElementById('modal-birdies').innerText = birdies;
-  document.getElementById('modal-bogies').innerText = bogies;
-  document.getElementById('modal-history-body').innerHTML = historyRowsHtml;
+  setElementText('modal-player-name', player.name);
+  setElementText('modal-player-tag', player.linkLabel || player.tag || 'TOUR MEMBER');
+  setElementText('modal-pts', `${bankedPts + weekPts} PTS`);
+  setElementText('modal-events', totalEvents);
+  setElementText('modal-rounds', completedRounds);
+  setElementText('modal-avg-score', avgScore);
+  setElementText('modal-podiums', `${wins}W / ${wins + runnerUp + third}P`);
+  setElementText('modal-mc', mcCount);
+  setElementText('modal-eagles', eagles);
+  setElementText('modal-birdies', birdies);
+  setElementText('modal-bogies', bogies);
+
+  const historyBody = document.getElementById('modal-history-body');
+  if (historyBody) historyBody.innerHTML = historyRowsHtml;
 
   modal.style.display = 'flex';
-}
 
 function closePlayerProfile() {
   const modal = document.getElementById('player-profile-modal');
@@ -1846,22 +1853,30 @@ function resetScores() {
     </div>
 
     <!-- Stats Grid -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:12px 0;">
       <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
-        <span style="font-size:0.65rem; color:#94a3b8; display:block;">SEASON POINTS</span>
-        <strong id="modal-pts" style="font-size:1.1rem; color:#fef08a;">-</strong>
+        <span style="font-size:0.6rem; color:#94a3b8; display:block;">SEASON PTS</span>
+        <strong id="modal-pts" style="font-size:1.05rem; color:#fef08a;">-</strong>
       </div>
       <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
-        <span style="font-size:0.65rem; color:#94a3b8; display:block;">EVENTS PLAYED</span>
-        <strong id="modal-events" style="font-size:1.1rem; color:#cbd5e1;">-</strong>
+        <span style="font-size:0.6rem; color:#94a3b8; display:block;">EVENTS</span>
+        <strong id="modal-events" style="font-size:1.05rem; color:#cbd5e1;">-</strong>
       </div>
       <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
-        <span style="font-size:0.65rem; color:#94a3b8; display:block;">WINS / PODIUMS</span>
-        <strong id="modal-podiums" style="font-size:1.1rem; color:#38bdf8;">-</strong>
+        <span style="font-size:0.6rem; color:#94a3b8; display:block;">RNDS PLAYED</span>
+        <strong id="modal-rounds" style="font-size:1.05rem; color:#cbd5e1;">-</strong>
       </div>
       <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
-        <span style="font-size:0.65rem; color:#94a3b8; display:block;">MISSED CUTS</span>
-        <strong id="modal-mc" style="font-size:1.1rem; color:#f87171;">-</strong>
+        <span style="font-size:0.6rem; color:#94a3b8; display:block;">AVG SCORE</span>
+        <strong id="modal-avg-score" style="font-size:1.05rem; color:#cbd5e1;">-</strong>
+      </div>
+      <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
+        <span style="font-size:0.6rem; color:#94a3b8; display:block;">W / PODIUMS</span>
+        <strong id="modal-podiums" style="font-size:1.05rem; color:#38bdf8;">-</strong>
+      </div>
+      <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
+        <span style="font-size:0.6rem; color:#94a3b8; display:block;">MISSED CUTS</span>
+        <strong id="modal-mc" style="font-size:1.05rem; color:#f87171;">-</strong>
       </div>
     </div>
 
