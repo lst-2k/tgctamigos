@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Los 4 Amigos</title>
+  <style>
+    :root {
+      --primary-dark: #334155;
+      --primary-accent: #2563eb;
+      --gold-accent: #d97706;
+      --round-1-color: #0284c7;
+      --round-2-color: #0d9488;
+      --round-3-color: #7c3aed;
+      --round-4-color: #c026d3;
+      --bg-gradient: linear-gradient(135deg, #334155 0%, #475569 100%);
+      --glass-bg: rgba(255, 255, 255, 0.95);
+      --glass-border: rgba(255, 255, 255, 0.25);
+      --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; margin: 0; padding: 0; background: #334155; background-image: var(--bg-gradient); background-attachment: fixed; color: #f8fafc; }
+    body { font-family: 'Inter', -apple-system, sans-serif; padding: 6px; }
+    
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+    .header-block { text-align: center; margin-bottom: 10px; }
+    .brand-main { font-size: 1.1rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #fef08a; margin: 0; }
+    .sub-brand { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1; margin: 2px 0; }
+    .venue-input { border: none; background: rgba(0,0,0,0.15); border-radius: 6px; font-weight: 800; text-align: center; color: #f8fafc; width: 90%; max-width: 400px; font-size: 1.1rem; text-transform: uppercase; outline: none; padding: 4px; }
+
+    #capture-area { padding: 8px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(51, 65, 85, 0.5); }
+
+    .table-wrapper { 
+      width: 100%; 
+      max-height: 75vh;    
+      overflow-y: auto;    
+      overflow-x: auto;    
+      border-radius: 8px; 
+      box-shadow: var(--shadow-soft); 
+      margin-bottom: 12px; 
+      background: #475569; 
+      border: 1px solid var(--glass-border);
+      -webkit-overflow-scrolling: touch; 
+    }
+    
+    table { border-collapse: separate; border-spacing: 0; width: 100%; color: #f8fafc; }
+    th { color: white; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.5px; padding: 6px 0px; text-align: center; background: #1e293b; }
+    td { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 1px 0px; text-align: center; }
+    
+    .col-del { width: 22px; display: none; }
+    .col-name { width: 120px; min-width: 120px; }
+    .col-rd { width: 32px; min-width: 32px; font-weight: 800; font-size: 0.65rem; }
+    .col-total { width: 42px; min-width: 42px; background: rgba(0,0,0,0.15); }
+
+    /* Score Inputs */
+    .score-input, .par-input { 
+      width: 22px; 
+      height: 22px; 
+      border: 1px solid #64748b; 
+      text-align: center; 
+      border-radius: 3px; 
+      font-weight: 700; 
+      background: #1e293b; 
+      color: #f8fafc; 
+      font-size: 0.75rem; 
+      outline: none; 
+      margin: 0 auto; 
+      display: block; 
+      padding: 0;
+    }
+    .score-input:focus, .par-input:focus { border-color: #3b82f6; }
+    .player-name-input { font-weight: 900; border: none; background: transparent; color: #fef08a; font-size: 0.8rem; padding-left: 4px; width: 100%; outline: none; }
+    
+    /* Round Tag Colors */
+    .rd-tag { display: inline-block; padding: 2px 4px; border-radius: 3px; color: white; font-size: 0.6rem; font-weight: 800; }
+    .tag-r1 { background: var(--round-1-color); }
+    .tag-r2 { background: var(--round-2-color); }
+    .tag-r3 { background: var(--round-3-color); }
+    .tag-r4 { background: var(--round-4-color); }
+
+    /* Relative Score Formatting */
+    .eagle { background: #d97706 !important; color: #ffffff !important; font-weight: bold; border-radius: 3px; }
+    .birdie { background: #dc2626 !important; color: white !important; font-weight: bold; border-radius: 3px; }
+    .par-gross { background: #16a34a !important; color: white !important; border-radius: 3px; }
+    .bogey-plus { background: #64748b !important; color: #f8fafc !important; border-radius: 3px; }
+
+    .player-header-row { background: #1e293b !important; border-top: 2px solid #64748b; }
+    .player-summary-row { background: rgba(0,0,0,0.2) !important; font-weight: 900; font-size: 0.75rem; border-bottom: 2px solid #334155; }
+
+    .dashboard-grid { display: flex; flex-direction: column; gap: 15px; }
+    
+    .leaderboard-table { width: 100%; border-radius: 8px; overflow: hidden; background: #475569; box-shadow: var(--shadow-soft); font-size: 0.75rem; border-collapse: collapse; }
+    .leaderboard-table thead th { padding: 6px 4px; color: #fef08a; font-weight: 800; background: #1e293b; border-bottom: 2px solid #64748b; }
+    .leaderboard-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #64748b; }
+    .player-leaderboard-name { text-align: left !important; padding-left: 8px !important; color: #f8fafc; font-weight: 700; }
+
+    #controls { text-align: center; margin-bottom: 8px; position: sticky; top: 0; z-index: 100; background: rgba(51, 65, 85, 0.95); backdrop-filter: blur(8px); padding: 6px; border-bottom: 1px solid var(--glass-border); }
+    button { padding: 6px 10px; font-size: 0.68rem; margin: 2px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: 700; text-transform: uppercase; transition: 0.2s; }
+    .import-btn { background: #0284c7; }
+    .admin-only { display: none; background: #64748b; }
+    .end-event-btn { background: #16a34a; }
+    .del-btn { color: #ef4444; cursor: pointer; font-weight: bold; border: none; background: transparent; padding: 0; }
+
+    #history-container { width: 100%; max-width: 800px; margin: 20px auto; }
+    .history-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid #64748b; font-size: 0.75rem; }
+    
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { background: #64748b !important; }
+    details { transition: all 0.3s ease; }
+
+    @media (max-width: 700px) {
+      .col-name { width: 100px; min-width: 100px; }
+    }
+
+    #backToTop {
+      position: fixed;
+      bottom: calc(15px + env(safe-area-inset-bottom)); 
+      right: 15px;
+      width: 36px;
+      height: 36px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    #backToTop.show { opacity: 1; visibility: visible; }
+
+    #logo-container { text-align: center; padding: 0; width: 100%; overflow: hidden; }
+    #logo-container img { width: 100%; height: auto; display: block; max-width: 400px; margin: 0 auto; }
+    #scorecard thead th { position: sticky; top: 0; z-index: 10; }
+	
+	/* Player External Link Button */
+	.player-link-btn {
+	  font-size: 0.55rem;
+	  font-weight: 800;
+	  color: #38bdf8;
+	  background: rgba(56, 189, 248, 0.15);
+	  border: 1px solid rgba(56, 189, 248, 0.3);
+	  padding: 1px 5px;
+	  border-radius: 3px;
+	  text-decoration: none;
+	  text-transform: uppercase;
+	  letter-spacing: 0.5px;
+	  transition: all 0.2s ease;
+	}
+
+	.player-link-btn:hover {
+	  background: rgba(56, 189, 248, 0.3);
+	  color: #ffffff;
+	}
+
+	.edit-link-trigger {
+	  font-size: 0.55rem !important;
+	  padding: 1px 4px !important;
+	  background: #475569 !important;
+	  color: #cbd5e1 !important;
+	  border: 1px solid #64748b !important;
+	  border-radius: 3px;
+	  cursor: pointer;
+	}
+	/* Container for 3-column desktop layout */
+	.desktop-3-col-grid {
+	  display: flex;
+	  flex-direction: column; /* Stacked on mobile/tablets */
+	  gap: 15px;
+	  width: 100%;
+	}
+
+	/* Enable 3 side-by-side columns on Desktop/Laptop screens (1200px and wider) */
+	@media (min-width: 1200px) {
+	  .desktop-3-col-grid {
+		display: grid;
+		/* Leaderboard gets slightly more proportional width (1.4fr) than the 2 stats tables (1fr 1fr) */
+		grid-template-columns: 1.4fr 1fr 1fr;
+		align-items: start;
+		gap: 15px;
+	  }
+	}
+
+	/* Optimize table cell padding so wide columns don't overflow horizontally */
+	.leaderboard-table th, 
+	.leaderboard-table td {
+	  padding: 5px 3px !important;
+	  font-size: 0.78rem;
+	  white-space: nowrap;
+	}
+		/* Center all numeric table headers and table body cells */
+		.leaderboard-table th, 
+		.leaderboard-table td {
+		  text-align: center;
+		  padding: 6px 2px !important;
+		}
+
+		/* Left-align player names specifically */
+		.leaderboard-table th:first-child,
+		.leaderboard-table td.player-leaderboard-name,
+		.leaderboard-table td:nth-child(2) {
+		  text-align: left !important;
+		  padding-left: 8px !important;
+		}
+		/* Force exact width adherence across all tables */
+	.leaderboard-table {
+	  width: 100%;
+	  table-layout: fixed; /* Prevents auto-resizing based on cell contents */
+	  border-collapse: collapse;
+	}
+
+	/* Base header and cell alignment */
+	.leaderboard-table th, 
+	.leaderboard-table td {
+	  text-align: center !important;
+	  padding: 6px 2px !important;
+	  font-size: 0.78rem;
+	  white-space: nowrap;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	}
+
+	/* Left-align player columns specifically (handles POS + PLAYER on Leaderboard vs PLAYER on Stats) */
+	.leaderboard-table th:first-child,
+	.leaderboard-table td:first-child,
+	.leaderboard-table th.col-name,
+	.leaderboard-table td.player-leaderboard-name {
+	  text-align: left !important;
+	  padding-left: 6px !important;
+	}
+	/* Ensure all tables use strict width layout and identical row heights */
+	.leaderboard-table {
+	  width: 100%;
+	  table-layout: fixed;
+	  border-collapse: collapse;
+	}
+
+	.leaderboard-table th, 
+	.leaderboard-table td {
+	  padding: 6px 4px !important;
+	  height: 32px !important; /* Force identical row height across all 3 tables */
+	  font-size: 0.78rem;
+	  box-sizing: border-box;
+	  vertical-align: middle;
+	}
+
+	/* Explicit alignment classes */
+	.leaderboard-table th:nth-child(2),
+	.leaderboard-table td.player-leaderboard-name {
+	  text-align: left !important;
+	  padding-left: 10px !important;
+	}
+  </style>
+</head>
+<body>
+
+<div id="logo-container">
+  <img src="logo.png" alt="LST74 Logo" onerror="this.style.display='none'">
+</div>
+
+<div id="controls">
+  <button class="admin-only" onclick="addPlayer()">+ Player</button>
+  <button class="admin-only import-btn" onclick="document.getElementById('file-import').click()">📂 Import</button>
+  <button class="admin-only end-event-btn" onclick="endEvent()">🏆 Finalize Week</button>
+  <button class="admin-only" style="background:#0284c7; color:#fff; font-weight:800; padding:6px 12px; border-radius:4px; border:none; cursor:pointer; margin-right:6px;" onclick="updateProvisionalLeaderboard()">🔄 Update Leaderboard</button>
+  <button class="admin-only" onclick="exportData()">💾 Backup</button>
+  <button class="admin-only" onclick="resetScores()" style="background: #dc2626;">🗑️ Reset All</button>
+  <button id="login-btn" onclick="adminLogin()" style="background: #2563eb;">🔒 Admin Login</button>
+  <button id="logout-btn" class="admin-only" onclick="adminLogout()" style="background: #64748b;">🔓 Logout</button>
+  <input type="file" id="file-import" style="display:none" accept=".json" onchange="importData(event)">
+</div>
+
+<div id="capture-area">
+  <div class="header-block">
+    <div class="brand-main">Los 4 Amigos TGCT Challenge</div>
+    <div class="sub-brand">Scorecards</div>
+    <input type="text" id="venue-name" class="venue-input" placeholder="ENTER VENUE" oninput="saveState()" readonly>
+  </div>
+
+  <div class="table-wrapper">
+    <table id="scorecard">
+      <thead>
+        <tr>
+          <th class="col-del admin-only">DEL</th>
+          <th class="col-name" style="text-align:left; padding-left:8px">Player</th>
+          <th class="col-rd">RD</th>
+          <script>for(let i=1; i<=18; i++) document.write(`<th>${i}</th>`);</script>
+          <th class="col-total">TOT</th>
+          <th class="col-total">+/-</th>
+        </tr>
+        <tr style="background: #1e293b;">
+          <td class="admin-only"></td>
+          <td colspan="2" style="text-align:right; font-weight:800; color:#cbd5e1; font-size:0.5rem; padding-right:4px">PAR</td>
+          <script>for(let i=0; i<18; i++) document.write(`<td><input type="number" class="par-input" value="4" oninput="saveState()"></td>`);</script>
+          <td id="total-par" style="font-weight:800; background:rgba(0,0,0,0.2);">72</td>
+          <td>-</td>
+        </tr>
+      </thead>
+      <tbody id="players-body"></tbody>
+    </table>
+  </div>
+
+<!-- Wrapper for 3-Column Desktop Layout -->
+<div class="desktop-3-col-grid">
+
+  <!-- 1. LEADERBOARD -->
+  <div class="team-table-wrapper">
+    <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">
+      LEADERBOARD
+    </h3>
+    <div class="table-wrapper">
+      <table class="leaderboard-table" id="individual-leaderboard">
+	  <thead>
+		<tr>
+		  <th style="width:7%; text-align:left; padding-left:4px;">POS</th>
+		  <th style="width:25%; text-align:left;">PLAYER</th>
+		  <th style="width:8%;">R1</th>
+		  <th style="width:8%;">R2</th>
+		  <th style="width:8%;">R3</th>
+		  <th style="width:8%;">R4</th>
+		  <th style="width:9%;">TOT</th>
+		  <th style="width:9%;">PAR</th>
+		  <th style="width:9%; color:#38bdf8;">WK</th>
+		  <th style="width:9%; color:#fef08a;">TOT</th>
+		</tr>
+	  </thead>
+	  <tbody id="individual-leaderboard-body"></tbody>
+	</table>
+		</div>
+	  </div>
+
+	<!-- 2. EVENT HONOURS & FINISHES -->
+	<div class="team-table-wrapper">
+	  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">
+		EVENT HONOURS & FINISHES
+	  </h3>
+	  <div class="table-wrapper">
+		<table class="leaderboard-table" id="finishes-leaderboard">
+		  <thead>
+			<tr>
+			  <th style="width:10%; text-align:center;">POS</th>
+			  <th style="width:30%; text-align:left; padding-left:10px;">PLAYER</th>
+			  <th style="width:12%;">EVTS</th>
+			  <th style="width:12%; color:#fef08a;">W</th>
+			  <th style="width:12%; color:#cbd5e1;">RU</th>
+			  <th style="width:12%; color:#b45309;">3RD</th>
+			  <th style="width:12%; color:#f87171;">MC</th>
+			</tr>
+		  </thead>
+		  <tbody id="finishes-leaderboard-body"></tbody>
+		</table>
+	  </div>
+	</div>
+
+	<!-- 3. PLAYER STATS -->
+	<div class="team-table-wrapper">
+	  <h3 style="text-align:center; font-size:0.85rem; color:#fef08a; letter-spacing:1px; margin: 10px 0 5px 0;">
+		PLAYER STATS - SEASON
+	  </h3>
+	  <div class="table-wrapper">
+		<table class="leaderboard-table" id="player-stats-leaderboard">
+		  <thead>
+			<tr>
+			  <th style="width:10%; text-align:center;">POS</th>
+			  <th style="width:30%; text-align:left; padding-left:10px;">PLAYER</th>
+			  <th style="width:12%;">AVG</th>
+			  <th style="width:12%;">BEST</th>
+			  <th style="width:12%; color:#fef08a;">EAG</th>
+			  <th style="width:12%; color:#38bdf8;">BIR</th>
+			  <th style="width:12%; color:#f87171;">BOG</th>
+			</tr>
+		  </thead>
+		  <tbody id="player-stats-body"></tbody>
+		</table>
+	  </div>
+	</div>
+
+</div>
+
+    <div id="history-container"></div>
+    <div id="backToTop" onclick="scrollToTop()">↑</div>
+  </div>
+</div>
+
+<!-- Main App Logic Functions -->
+<script>
+window.players = [];
+window.seasonPoints = {}; 
+window.leagueHistory = []; // Renamed from "history" to avoid browser conflict
+
+window.isAdmin = false;
+
+function applyAdminUI(isAdmin) {
+  window.isAdmin = isAdmin;
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isAdmin ? (el.tagName === 'BUTTON' ? 'inline-block' : 'table-cell') : 'none';
+  });
+  document.querySelectorAll('.par-input').forEach(el => el.readOnly = !isAdmin);
+  const venueInput = document.getElementById('venue-name');
+  if (venueInput) venueInput.readOnly = !isAdmin;
+  const loginBtn = document.getElementById('login-btn');
+  if (loginBtn) loginBtn.style.display = isAdmin ? 'none' : 'inline-block';
+  renderPlayers();
+  if (typeof updateCalculations === 'function') updateCalculations();
+}
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTop');
+  if (window.scrollY > 200) btn.classList.add('show');
+  else btn.classList.remove('show');
+});
+
+function applyState(state) {
+  if(!state) return;
+
+  // 1. Save currently focused input position
+  const activeEl = document.activeElement;
+  let activeData = null;
+  if (activeEl && activeEl.classList.contains('score-input')) {
+    activeData = {
+      p: activeEl.getAttribute('data-p'),
+      r: activeEl.getAttribute('data-r'),
+      h: activeEl.getAttribute('data-h')
+    };
+	updateFinishesLeaderboard();
+  }
+
+  // 2. Load state
+  window.players = state.players || [];
+  window.seasonPoints = state.seasonPoints || {};
+  window.leagueHistory = state.leagueHistory || state.history || [];
+  document.getElementById('venue-name').value = state.venueName || '';
+  
+  const parInputs = document.querySelectorAll('.par-input');
+  if (state.pars) state.pars.forEach((v, i) => { if(parInputs[i]) parInputs[i].value = v; });
+  
+  window.players.forEach(p => {
+    if(!p.r1Scores) p.r1Scores = Array(18).fill('');
+    if(!p.r2Scores) p.r2Scores = Array(18).fill('');
+    if(!p.r3Scores) p.r3Scores = Array(18).fill('');
+    if(!p.r4Scores) p.r4Scores = Array(18).fill('');
+  });
+
+  // 3. Render HTML
+  renderPlayers();
+  renderHistory();
+
+  // 4. Restore focus back to the score input box
+  if (activeData) {
+    const targetInp = document.querySelector(`.score-input[data-p="${activeData.p}"][data-r="${activeData.r}"][data-h="${activeData.h}"]`);
+    if (targetInp) {
+      targetInp.focus();
+      // Select text inside for quick overwriting/editing
+      targetInp.select(); 
+    }
+  }
+}
+
+	function editPlayerLink(pIdx) {
+	  const player = window.players[pIdx];
+	  
+	  const currentLabel = player.linkLabel || "Profile";
+	  const currentUrl = player.profileUrl || "https://";
+
+	  const newLabel = prompt("Enter Button Label (e.g. Stats, Twitch, Channel):", currentLabel);
+	  if (newLabel === null) return; // User cancelled
+
+	  const newUrl = prompt("Enter External URL (including https://):", currentUrl);
+	  if (newUrl === null) return; // User cancelled
+
+	  player.linkLabel = newLabel.trim() || "Profile";
+	  player.profileUrl = newUrl.trim();
+
+	  renderPlayers();
+	  if (typeof window.saveState === 'function') window.saveState();
+	}
+
+	function renderPlayers() {
+	  const tbody = document.getElementById('players-body');
+	  tbody.innerHTML = '';
+	  const isAdmin = !!window.isAdmin;
+
+	  let tabCounter = 1; // Explicit Tab Navigation Tracking
+
+	  window.players.forEach((p, pIdx) => {
+		let playerHtml = '';
+
+		[1, 2, 3, 4].forEach(rdNum => {
+	  const scores = getRoundScores(p, rdNum);
+	  const isFirst = rdNum === 1;
+	  const isSecond = rdNum === 2; // <-- Check if it's Round 2
+
+	  playerHtml += `<tr class="${isFirst ? 'player-header-row' : ''}">
+		<td class="admin-only" style="${isAdmin ? 'display:table-cell' : 'display:none'}">
+		  ${isFirst ? `<button class="del-btn" onclick="deletePlayer(${pIdx})">✕</button>` : ''}
+		</td>
+		<td style="text-align:left; padding-left:4px">
+		  ${isFirst ? `<input class="player-name-input" value="${p.name}" ${isAdmin ? '' : 'readonly'} onchange="window.players[${pIdx}].name=this.value; saveState();">` : ''}
+		  
+		  ${/* Render Link Button on R2 row instead */ ''}
+		  ${isSecond ? `
+			<div style="display:flex; align-items:center; gap:4px; padding-left:4px;">
+			  <a href="${p.profileUrl || '#'}" target="_blank" id="player-link-${pIdx}" class="player-link-btn" style="${p.profileUrl ? 'display:inline-block;' : 'display:none;'}">
+				${p.linkLabel || 'Profile'} ↗
+			  </a>
+			  ${isAdmin ? `
+				<button class="edit-link-trigger" onclick="editPlayerLink(${pIdx})" title="Edit Player Link">⚙️ Link</button>
+			  ` : ''}
+			</div>
+		  ` : ''}
+		</td>
+		<td><span class="rd-tag tag-r${rdNum}">R${rdNum}</span></td>`;
+
+	  for(let h=0; h<18; h++) {
+		playerHtml += `<td><input type="number" class="score-input" tabindex="${tabCounter++}" data-p="${pIdx}" data-r="${rdNum}" data-h="${h}" value="${scores[h] || ''}" ${isAdmin ? '' : 'readonly'} oninput="updateCalculations()"></td>`;
+	  }
+
+	  playerHtml += `<td style="font-weight:700" id="tot-gross-${pIdx}-r${rdNum}">0</td>
+					<td style="font-size:0.75rem !important;" id="tot-rel-${pIdx}-r${rdNum}">-</td>
+	  </tr>`;
+	});
+
+    playerHtml += `<tr class="player-summary-row">
+      <td class="admin-only" style="${isAdmin ? 'display:table-cell' : 'display:none'}"></td>
+      <td colspan="2" style="text-align:right; padding-right:8px; color:#fef08a;">TOTAL COMBINED</td>
+      <td colspan="18" style="text-align:left; color:#cbd5e1; font-size:0.65rem;">(All 4 Rounds)</td>
+      <td id="p-grand-gross-${pIdx}" style="color:#fef08a;">0</td>
+      <td id="p-grand-rel-${pIdx}">-</td>
+    </tr>`;
+
+    tbody.innerHTML += playerHtml;
+  });
+
+  updateCalculations(false);
+}
+
+function getRoundScores(player, roundNum) {
+  if (roundNum === 1) return player.r1Scores;
+  if (roundNum === 2) return player.r2Scores;
+  if (roundNum === 3) return player.r3Scores;
+  return player.r4Scores;
+}
+
+function updateCalculations(triggerSave = true) {
+  const parInputs = document.querySelectorAll('.par-input');
+  let totalCoursePar = 0;
+  parInputs.forEach(input => { totalCoursePar += (parseInt(input.value) || 0); });
+  document.getElementById('total-par').textContent = totalCoursePar;
+  
+  window.players.forEach((p, pIdx) => {
+    let grandGross = 0;
+    let grandParPlayed = 0;
+
+    [1, 2, 3, 4].forEach(rdNum => {
+      let rdGross = 0;
+      let playedPar = 0;
+      const inputs = document.querySelectorAll(`.score-input[data-p="${pIdx}"][data-r="${rdNum}"]`);
+      const currentScores = getRoundScores(p, rdNum);
+
+      inputs.forEach((inp, hIdx) => {
+        const gross = parseInt(inp.value);
+        const par = parseInt(parInputs[hIdx].value) || 4;
+        
+        inp.classList.remove('birdie', 'eagle', 'par-gross', 'bogey-plus');
+        currentScores[hIdx] = inp.value;
+
+        if (!isNaN(gross) && gross > 0) {
+          rdGross += gross;
+          playedPar += par;
+          const diff = gross - par;
+          if (diff <= -2) inp.classList.add('eagle'); 
+          else if (diff === -1) inp.classList.add('birdie'); 
+          else if (diff === 0) inp.classList.add('par-gross'); 
+          else inp.classList.add('bogey-plus');
+        }
+      });
+
+      const relToPar = rdGross > 0 ? (rdGross - playedPar) : 0;
+      const relText = relToPar === 0 ? 'E' : relToPar > 0 ? `+${relToPar}` : `${relToPar}`;
+
+      document.getElementById(`tot-gross-${pIdx}-r${rdNum}`).textContent = rdGross > 0 ? rdGross : 0;
+      document.getElementById(`tot-rel-${pIdx}-r${rdNum}`).textContent = rdGross > 0 ? relText : '-';
+
+      grandGross += rdGross;
+      grandParPlayed += playedPar;
+    });
+
+    const grandRel = grandGross > 0 ? (grandGross - grandParPlayed) : 0;
+    const grandRelText = grandRel === 0 ? 'E' : grandRel > 0 ? `+${grandRel}` : `${grandRel}`;
+
+    document.getElementById(`p-grand-gross-${pIdx}`).textContent = grandGross;
+    const grandRelEl = document.getElementById(`p-grand-rel-${pIdx}`);
+    grandRelEl.textContent = grandGross > 0 ? grandRelText : '-';
+    grandRelEl.style.color = grandRel < 0 ? '#4ade80' : grandRel > 0 ? '#f87171' : '#f8fafc';
+  });
+
+  updateIndividualLeaderboard();
+  updateStatsLeaderboard();
+  updateFinishesLeaderboard();
+  if (triggerSave && typeof window.saveState === 'function') window.saveState();
+}
+
+function calculatePlayerStats(p) {
+  const parInputs = document.querySelectorAll('.par-input');
+  let totals = { r1: 0, r2: 0, r3: 0, r4: 0, grandTotal: 0, relToPar: 0 };
+  
+  [1, 2, 3, 4].forEach(rd => {
+    const rdScores = getRoundScores(p, rd);
+    let rdSum = 0;
+    let rdParSum = 0;
+    
+    rdScores.forEach((s, idx) => {
+      const val = parseInt(s);
+      const par = parseInt(parInputs[idx]?.value) || 4;
+      if (!isNaN(val) && val > 0) {
+        rdSum += val;
+        rdParSum += par;
+      }
+    });
+    
+    totals[`r${rd}`] = rdSum;
+    totals.grandTotal += rdSum;
+    if (rdSum > 0) totals.relToPar += (rdSum - rdParSum);
+  });
+
+  return totals;
+}
+
+function updateIndividualLeaderboard() {
+  const tbody = document.getElementById('individual-leaderboard-body');
+  if (!tbody) return;
+
+  const parInputs = document.querySelectorAll('.par-input');
+
+  const cutBonusMap = {
+    'cc-a': 20, 'cc-b': 18, 'cc-c': 16, 'cc-d': 14, 'cc-e': 12,
+    'cc-f': 10, 'cc-g': 8,  'cc-h': 6,  'cc-i': 4,  'cc-j': 2
+  };
+
+  const pointDistribution = [25, 15, 10, 5];
+
+  // Helper function: extracts "cc-x" from p.linkLabel (e.g. "TOUR CC-H" -> "cc-h")
+  const getPlayerTag = (p) => {
+    const raw = String(p.linkLabel || p.tag || '').toLowerCase();
+    const match = raw.match(/cc-?[a-j]/i);
+    if (match) {
+      const letter = match[0].replace(/[^a-z]/gi, '').slice(-1);
+      return 'cc-' + letter;
+    }
+    return '';
+  };
+
+  // 1. Calculate scores & hole counts for all players
+  let playerData = window.players.map(p => {
+    let grandTotal = 0;
+    let relToParNum = 0;
+    let completedHoles = 0;
+    let roundTotals = { r1: '-', r2: '-', r3: '-', r4: '-' };
+
+    [1, 2, 3, 4].forEach(rd => {
+      const rdScores = getRoundScores(p, rd);
+      let rdSum = 0;
+      let rdHoles = 0;
+
+      rdScores.forEach((s, hIdx) => {
+        const score = parseInt(s);
+        const par = parseInt(parInputs[hIdx]?.value) || 4;
+
+        if (!isNaN(score) && score > 0) {
+          rdSum += score;
+          grandTotal += score;
+          relToParNum += (score - par);
+          completedHoles++;
+          rdHoles++;
+        }
+      });
+
+      if (rdHoles === 18) {
+        roundTotals[`r${rd}`] = rdSum;
+      } else if (rdHoles > 0) {
+        roundTotals[`r${rd}`] = `${rdSum}*`;
+      }
+    });
+
+    let relToParStr = 'E';
+    if (relToParNum < 0) relToParStr = `${relToParNum}`;
+    else if (relToParNum > 0) relToParStr = `+${relToParNum}`;
+
+    return {
+      name: p.name,
+      tagKey: getPlayerTag(p),
+      roundTotals: roundTotals,
+      grandTotal: grandTotal,
+      relToParNum: relToParNum,
+      relToParStr: relToParStr,
+      completedHoles: completedHoles,
+      madeCut: completedHoles === 72,
+      bankedPts: window.seasonPoints[p.name] || 0
+    };
+  });
+
+  // 2. Rank active players by score to calculate position + cut bonus points
+  let rankedActivePlayers = [...playerData]
+    .filter(p => p.completedHoles > 0)
+    .sort((a, b) => a.relToParNum - b.relToParNum || a.grandTotal - b.grandTotal);
+
+  let weekPointsMap = {};
+  let posCount = 0;
+
+  rankedActivePlayers.forEach(p => {
+    if (p.madeCut) {
+      const posPts = pointDistribution[posCount] || 0;
+      posCount++;
+      const bonusPts = cutBonusMap[p.tagKey] || 0;
+      weekPointsMap[p.name] = posPts + bonusPts;
+    } else {
+      weekPointsMap[p.name] = 0;
+    }
+  });
+
+  // 3. Attach calculated weekly & total points to players
+  let finalLeaderboard = playerData.map(p => {
+    const weekPts = weekPointsMap[p.name] || 0;
+    const totalPts = p.bankedPts + weekPts;
+
+    return {
+      ...p,
+      weekPts: weekPts,
+      totalPts: totalPts
+    };
+  });
+
+  // 4. Sort Leaderboard by Total Season Points (Highest First), then lowest score
+  finalLeaderboard.sort((a, b) => {
+    if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+    if (a.completedHoles === 0 && b.completedHoles === 0) return 0;
+    if (a.completedHoles === 0) return 1;
+    if (b.completedHoles === 0) return -1;
+    return a.relToParNum - b.relToParNum;
+  });
+
+  // 5. Render HTML table rows
+  tbody.innerHTML = finalLeaderboard.map((p, idx) => {
+    const hasPlayed = p.completedHoles > 0 || p.totalPts > 0;
+    const relColor = p.relToParNum < 0 ? '#f87171' : (p.relToParNum === 0 ? '#4ade80' : '#cbd5e1');
+
+    return `<tr>
+      <td style="font-weight:800; color:#cbd5e1;">${hasPlayed ? (idx + 1) : '-'}</td>
+      <td class="player-leaderboard-name">${p.name}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r1}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r2}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r3}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.roundTotals.r4}</td>
+      <td style="font-weight:800;">${p.completedHoles > 0 ? p.grandTotal : '-'}</td>
+      <td style="font-weight:800; color:${relColor};">${p.completedHoles > 0 ? p.relToParStr : '-'}</td>
+      <td style="font-weight:800; color:#38bdf8;">${p.weekPts > 0 ? `+${p.weekPts}` : '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.totalPts}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Sorting state tracking for Finishes Table
+let currentFinishesSortColumn = 'wins';
+let isFinishesSortAscending = false;
+
+function calculatePlayerFinishes(player) {
+  let counts = {
+    name: player.name,
+    events: 0,
+    wins: 0,
+    runnerUp: 0,
+    third: 0,
+    mc: 0
+  };
+
+  if (!window.leagueHistory || window.leagueHistory.length === 0) return counts;
+
+  window.leagueHistory.forEach(event => {
+    if (!event.rankings) return;
+
+    // Find player in this historical event
+    const playerEntryIdx = event.rankings.findIndex(r => r.name === player.name);
+    
+    if (playerEntryIdx !== -1) {
+      const entry = event.rankings[playerEntryIdx];
+      counts.events++;
+
+      if (entry.status === 'MC') {
+        counts.mc++;
+      } else if (entry.pointsAllocated > 0) {
+        if (playerEntryIdx === 0) counts.wins++;
+        else if (playerEntryIdx === 1) counts.runnerUp++;
+        else if (playerEntryIdx === 2) counts.third++;
+      }
+    }
+  });
+
+  return counts;
+}
+
+function updateFinishesLeaderboard() {
+  const tbody = document.getElementById('finishes-leaderboard-body');
+  if (!tbody) return;
+
+  // Calculates career stats using window.leagueHistory (does NOT reset on week finalize)
+  let finishesData = window.players.map(p => calculatePlayerFinishes(p));
+
+  // Default / Active Sort logic
+  finishesData.sort((a, b) => {
+    if (currentFinishesSortColumn === 'wins') {
+      // Primary: Wins (1st)
+      if (b.wins !== a.wins) return isFinishesSortAscending ? a.wins - b.wins : b.wins - a.wins;
+      // Secondary Tie-breaker: Runners Up (2nd)
+      if (b.runnerUp !== a.runnerUp) return isFinishesSortAscending ? a.runnerUp - b.runnerUp : b.runnerUp - a.runnerUp;
+      // Tertiary Tie-breaker: 3rd Place
+      return isFinishesSortAscending ? a.third - b.third : b.third - a.third;
+    }
+
+    let valA = a[currentFinishesSortColumn];
+    let valB = b[currentFinishesSortColumn];
+
+    if (typeof valA === 'string') {
+      return isFinishesSortAscending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    }
+
+    return isFinishesSortAscending ? valA - valB : valB - valA;
+  });
+
+  tbody.innerHTML = finishesData.map((p, idx) => {
+    return `<tr>
+      <td style="font-weight:800; color:#cbd5e1;">${p.events > 0 ? (idx + 1) : '-'}</td>
+      <td class="player-leaderboard-name">${p.name}</td>
+      <td style="font-weight:800; color:#cbd5e1;">${p.events || '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.wins || '-'}</td>
+      <td style="font-weight:800; color:#e2e8f0;">${p.runnerUp || '-'}</td>
+      <td style="font-weight:800; color:#f59e0b;">${p.third || '-'}</td>
+      <td style="font-weight:800; color:#f87171;">${p.mc || '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortFinishesTable(columnKey) {
+  if (currentFinishesSortColumn === columnKey) {
+    isFinishesSortAscending = !isFinishesSortAscending;
+  } else {
+    currentFinishesSortColumn = columnKey;
+    isFinishesSortAscending = (columnKey === 'name');
+  }
+  updateFinishesLeaderboard();
+}
+
+// Sorting state tracking for Stats Table
+let currentStatsSortColumn = 'eagle';
+let isStatsSortAscending = false;
+
+function calculateDetailedPlayerStats(player) {
+  const parInputs = document.querySelectorAll('.par-input');
+  
+  let stats = {
+    name: player.name,
+    hio: 0,
+    alby: 0,
+    eagle: 0,
+    birdie: 0,
+    par: 0,
+    bogey: 0,
+    totalHolesPlayed: 0
+  };
+
+  const processHole = (scoreVal, parVal) => {
+    const score = parseInt(scoreVal);
+    const par = parseInt(parVal) || 4;
+
+    if (!isNaN(score) && score > 0) {
+      stats.totalHolesPlayed++;
+      const diff = score - par;
+
+      if (score === 1) {
+        stats.hio++;
+      } else if (diff <= -3) {
+        stats.alby++;
+      } else if (diff === -2) {
+        stats.eagle++;
+      } else if (diff === -1) {
+        stats.birdie++;
+      } else if (diff === 0) {
+        stats.par++;
+      } else if (diff >= 1) {
+        stats.bogey++;
+      }
+    }
+  };
+
+  // 1. Process Past Finalized Events from History
+  if (window.leagueHistory && window.leagueHistory.length > 0) {
+    window.leagueHistory.forEach(event => {
+      if (!event.rankings) return;
+      const historyPlayer = event.rankings.find(r => r.name === player.name);
+      
+      // If historical detailed hole scores exist
+      if (historyPlayer && historyPlayer.holeScores) {
+        historyPlayer.holeScores.forEach(item => {
+          processHole(item.score, item.par);
+        });
+      }
+    });
+  }
+
+  // 2. Process Current Live Scorecards (Active Week)
+  [1, 2, 3, 4].forEach(rd => {
+    const rdScores = getRoundScores(player, rd);
+    rdScores.forEach((s, hIdx) => {
+      const par = parseInt(parInputs[hIdx]?.value) || 4;
+      processHole(s, par);
+    });
+  });
+
+  return stats;
+}
+
+function updatePlayerStats() {
+  const tbody = document.getElementById('player-stats-body');
+  if (!tbody) return;
+
+  const parInputs = document.querySelectorAll('.par-input');
+
+  let statsData = window.players.map(p => {
+    let totalScore = 0;
+    let completedRounds = 0;
+    let bestRound = Infinity;
+    let totalBirdies = 0;
+    let totalEagles = 0;
+    let totalBogies = 0;
+
+    // 1. PULL HISTORICAL STATS FROM ARCHIVED WEEKS (window.leagueHistory)
+    if (window.leagueHistory && window.leagueHistory.length > 0) {
+      window.leagueHistory.forEach(event => {
+        if (!event.rankings) return;
+        const historicalPlayer = event.rankings.find(r => r.name === p.name);
+        
+        if (historicalPlayer && historicalPlayer.holeScores && historicalPlayer.holeScores.length > 0) {
+          // Process 18-hole blocks from historical data
+          for (let r = 0; r < historicalPlayer.holeScores.length; r += 18) {
+            const rdHoles = historicalPlayer.holeScores.slice(r, r + 18);
+            if (rdHoles.length === 18) {
+              let rdSum = 0;
+              rdHoles.forEach(h => {
+                const score = parseInt(h.score);
+                const par = parseInt(h.par) || 4;
+                if (!isNaN(score) && score > 0) {
+                  rdSum += score;
+                  const diff = score - par;
+                  if (diff <= -2) totalEagles++;
+                  else if (diff === -1) totalBirdies++;
+                  else if (diff === 1) totalBogies++;
+                }
+              });
+              completedRounds++;
+              totalScore += rdSum;
+              if (rdSum < bestRound) bestRound = rdSum;
+            }
+          }
+        }
+      });
+    }
+
+    // 2. ADD CURRENT ACTIVE WEEK STATS (window.players)
+    [1, 2, 3, 4].forEach(rd => {
+      const rdScores = getRoundScores(p, rd);
+      let rdSum = 0;
+      let rdHoles = 0;
+
+      rdScores.forEach((s, hIdx) => {
+        const score = parseInt(s);
+        const par = parseInt(parInputs[hIdx]?.value) || 4;
+
+        if (!isNaN(score) && score > 0) {
+          rdSum += score;
+          rdHoles++;
+
+          const diff = score - par;
+          if (diff <= -2) totalEagles++;
+          else if (diff === -1) totalBirdies++;
+          else if (diff === 1) totalBogies++;
+        }
+      });
+
+      if (rdHoles === 18) {
+        completedRounds++;
+        totalScore += rdSum;
+        if (rdSum < bestRound) bestRound = rdSum;
+      }
+    });
+
+    const avgRound = completedRounds > 0 ? (totalScore / completedRounds).toFixed(1) : '-';
+    const bestStr = bestRound !== Infinity ? bestRound : '-';
+
+    return {
+      name: p.name,
+      avg: avgRound,
+      best: bestStr,
+      eagles: totalEagles,
+      birdies: totalBirdies,
+      bogies: totalBogies
+    };
+  });
+
+  // Sort by lowest scoring average, then most birdies
+  statsData.sort((a, b) => {
+    if (a.avg === '-' && b.avg === '-') return 0;
+    if (a.avg === '-') return 1;
+    if (b.avg === '-') return -1;
+    if (parseFloat(a.avg) !== parseFloat(b.avg)) {
+      return parseFloat(a.avg) - parseFloat(b.avg);
+    }
+    return b.birdies - a.birdies;
+  });
+
+  // Render Table Rows
+  tbody.innerHTML = statsData.map((p, idx) => `
+    <tr>
+      <td style="font-weight:800; color:#cbd5e1; text-align:center;">${p.avg !== '-' ? (idx + 1) : '-'}</td>
+      <td class="player-leaderboard-name" style="text-align:left; padding-left:10px;">${p.name}</td>
+      <td style="font-weight:700; color:#cbd5e1; text-align:center;">${p.avg}</td>
+      <td style="font-weight:700; color:#4ade80; text-align:center;">${p.best}</td>
+      <td style="font-weight:700; color:#fef08a; text-align:center;">${p.eagles}</td>
+      <td style="font-weight:700; color:#38bdf8; text-align:center;">${p.birdies}</td>
+      <td style="font-weight:700; color:#f87171; text-align:center;">${p.bogies}</td>
+    </tr>
+  `).join('');
+}
+
+// Alias so any old calls to updateStatsLeaderboard() redirect automatically
+window.updateStatsLeaderboard = updatePlayerStats;
+
+function sortStatsTable(columnKey) {
+  if (currentStatsSortColumn === columnKey) {
+    // Toggle Direction if same column clicked
+    isStatsSortAscending = !isStatsSortAscending;
+  } else {
+    currentStatsSortColumn = columnKey;
+    // Default to descending for numbers, ascending for player names
+    isStatsSortAscending = (columnKey === 'name');
+  }
+  updateStatsLeaderboard();
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-container');
+  if (!container) return;
+
+  if (!window.leagueHistory || window.leagueHistory.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:15px; color:#94a3b8; font-size:0.85rem;">No archived events yet.</div>';
+    return;
+  }
+
+  const medalMap = ['🥇', '🥈', '🥉'];
+
+  container.innerHTML = window.leagueHistory.map((event, eventIdx) => {
+    const rowsHtml = event.rankings.map((r, rIdx) => {
+      const isCut = r.status === 'MC';
+      // Do NOT award medals (🥇, 🥈, 🥉) if the player missed the cut
+      const medal = isCut ? '•' : (medalMap[rIdx] || '•');
+      const cutBadge = isCut ? '<span style="color:#f87171; font-size:0.7rem; font-weight:700; margin-left:4px;">[CUT]</span>' : '';
+
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 36px;">
+          <td style="width: 32px; text-align: center; padding: 6px 0 6px 10px; font-size: 0.9rem;">
+            ${medal}
+          </td>
+          <td style="text-align: left; padding: 6px 10px; white-space: nowrap;">
+            <span style="font-weight:700; color:#f8fafc;">${r.name}</span>
+            ${cutBadge}
+          </td>
+          <td style="width: 180px; text-align: left; padding: 6px 10px; color:#cbd5e1; font-size:0.85rem; white-space:nowrap;">
+            Score: <strong style="color:#fff;">${r.score}</strong> 
+            <span style="color:${r.relToPar.startsWith('-') ? '#f87171' : (r.relToPar === 'E' ? '#4ade80' : '#cbd5e1')}; font-weight:700;">
+              (${r.relToPar})
+            </span>
+          </td>
+          <td style="width: 90px; text-align: right; padding: 6px 14px 6px 0; font-weight:800; color:#fef08a; white-space:nowrap;">
+            +${r.pointsAllocated} PTS
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+  <div class="archive-card" style="margin-bottom:12px; background:#1e293b; border-radius:6px; overflow:hidden;">
+    <div class="archive-header" onclick="toggleArchive(${eventIdx})" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#334155; cursor:pointer;">
+      <span style="font-weight:800; color:#fff; font-size:0.9rem;">${event.title}</span>
+      <span style="font-weight:700; color:#cbd5e1; font-size:0.75rem; margin-left:auto;">VIEW ▼</span>
+    </div>
+    <div id="archive-body-${eventIdx}" class="archive-body" style="display:none; padding:4px 0;">
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+  }).join('');
+}
+
+function toggleArchive(index) {
+  const body = document.getElementById(`archive-body-${index}`);
+  if (body) {
+    const isHidden = body.style.display === 'none' || body.style.display === '';
+    body.style.display = isHidden ? 'block' : 'none';
+  }
+}
+
+// Make sure it is globally accessible to inline onclick handlers
+window.toggleArchive = toggleArchive;
+
+
+function addPlayer() {
+  const name = prompt("Player Name:");
+  if (name) {
+    window.players.push({ 
+      name, 
+      r1Scores: Array(18).fill(''), 
+      r2Scores: Array(18).fill(''),
+      r3Scores: Array(18).fill(''),
+      r4Scores: Array(18).fill(''),
+    });
+    renderPlayers();
+    if (typeof window.saveState === 'function') window.saveState();
+  }
+}
+
+function deletePlayer(idx) {
+  if(confirm(`Delete ${window.players[idx].name}?`)) { 
+    window.players.splice(idx, 1); 
+    renderPlayers(); 
+    if (typeof window.saveState === 'function') window.saveState(); 
+  }
+}
+
+function updateProvisionalLeaderboard() {
+  const parInputs = document.querySelectorAll('.par-input');
+  const pointDistribution = [25, 15, 10, 5];
+
+  const cutBonusMap = {
+    'cc-a': 20, 'cc-b': 18, 'cc-c': 16, 'cc-d': 14, 'cc-e': 12,
+    'cc-f': 10, 'cc-g': 8,  'cc-h': 6,  'cc-i': 4,  'cc-j': 2
+  };
+
+  // Helper function to extract "cc-x" from p.linkLabel (e.g. "TOUR CC-H")
+  const getPlayerTag = (p) => {
+    const raw = String(p.linkLabel || p.tag || '').toLowerCase();
+    const match = raw.match(/cc-?[a-j]/i);
+    if (match) {
+      const letter = match[0].replace(/[^a-z]/gi, '').slice(-1);
+      return 'cc-' + letter;
+    }
+    return '';
+  };
+
+  // 1. Calculate live standings for current active week
+  let liveStandings = window.players.map(p => {
+    let grandTotal = 0;
+    let relToParNum = 0;
+    let completedHoles = 0;
+
+    [1, 2, 3, 4].forEach(rd => {
+      getRoundScores(p, rd).forEach((s, hIdx) => {
+        const score = parseInt(s);
+        const par = parseInt(parInputs[hIdx]?.value) || 4;
+        if (!isNaN(score) && score > 0) {
+          grandTotal += score;
+          relToParNum += (score - par);
+          completedHoles++;
+        }
+      });
+    });
+
+    const tagKey = getPlayerTag(p);
+
+    return {
+      name: p.name,
+      tagKey: tagKey,
+      grandTotal: grandTotal,
+      relToParNum: relToParNum,
+      completedHoles: completedHoles,
+      madeCut: completedHoles === 72
+    };
+  })
+  .filter(p => p.completedHoles > 0)
+  .sort((a, b) => a.relToParNum - b.relToParNum || a.grandTotal - b.grandTotal);
+
+  // 2. Map provisional points (Position Points + Tag Cut Bonus)
+  let provisionalWeekPoints = {};
+  let pointsAppliedCount = 0;
+
+  liveStandings.forEach(p => {
+    let totalPts = 0;
+
+    if (p.madeCut) {
+      // Finish position points (25, 15, 10, 5)
+      const posPts = pointDistribution[pointsAppliedCount] || 0;
+      pointsAppliedCount++;
+
+      // Tag Cut Bonus points (e.g., cc-h = 6)
+      const bonusPts = cutBonusMap[p.tagKey] || 0;
+
+      totalPts = posPts + bonusPts;
+    }
+
+    provisionalWeekPoints[p.name] = totalPts;
+  });
+
+  // 3. Store provisional points locally on each player object
+  window.players.forEach(p => {
+    p.provisionalPoints = provisionalWeekPoints[p.name] || 0;
+  });
+
+  // 4. Render local UI table
+  if (typeof updateIndividualLeaderboard === 'function') {
+    updateIndividualLeaderboard();
+  }
+
+  // 5. Broadcast to Firebase live
+  if (typeof window.saveState === 'function') {
+    window.saveState();
+  }
+
+  // 3. Render Leaderboard including banked points + current week's provisional points
+  const tbody = document.getElementById('individual-leaderboard-body');
+  if (!tbody) return;
+
+  let leaderboardData = window.players.map(p => {
+    let grandTotal = 0;
+    let relToParNum = 0;
+    let holesCompleted = 0;
+    let roundTotals = { r1: '-', r2: '-', r3: '-', r4: '-' };
+
+    [1, 2, 3, 4].forEach(rd => {
+      const rdScores = getRoundScores(p, rd);
+      let rdSum = 0;
+      let rdHoles = 0;
+
+      rdScores.forEach((s, hIdx) => {
+        const score = parseInt(s);
+        const par = parseInt(parInputs[hIdx]?.value) || 4;
+        if (!isNaN(score) && score > 0) {
+          rdSum += score;
+          grandTotal += score;
+          relToParNum += (score - par);
+          holesCompleted++;
+          rdHoles++;
+        }
+      });
+
+      if (rdHoles === 18) roundTotals[`r${rd}`] = rdSum;
+      else if (rdHoles > 0) roundTotals[`r${rd}`] = `${rdSum}*`;
+    });
+
+    // Banked season points + provisional points for live round
+    const bankedPts = window.seasonPoints[p.name] || 0;
+    const provPts = provisionalWeekPoints[p.name] || 0;
+    const totalPtsWithLive = bankedPts + provPts;
+
+    let relToParStr = 'E';
+    if (relToParNum < 0) relToParStr = `${relToParNum}`;
+    else if (relToParNum > 0) relToParStr = `+${relToParNum}`;
+
+    return {
+      name: p.name,
+      r1: roundTotals.r1,
+      r2: roundTotals.r2,
+      r3: roundTotals.r3,
+      r4: roundTotals.r4,
+      grandTotal: grandTotal,
+      relToParNum: relToParNum,
+      relToParStr: relToParStr,
+      holesCompleted: holesCompleted,
+      points: totalPtsWithLive,
+      provPts: provPts
+    };
+  });
+
+  // Sort by Total Points (Banked + Provisional)
+  leaderboardData.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (a.holesCompleted === 0 && b.holesCompleted === 0) return 0;
+    if (a.holesCompleted === 0) return 1;
+    if (b.holesCompleted === 0) return -1;
+    return a.relToParNum - b.relToParNum;
+  });
+
+  // Render Rows
+  tbody.innerHTML = leaderboardData.map((p, idx) => {
+    const hasPlayed = p.holesCompleted > 0 || p.points > 0;
+    const relColor = p.relToParNum < 0 ? '#f87171' : (p.relToParNum === 0 ? '#4ade80' : '#cbd5e1');
+    const provBadge = p.provPts > 0 ? `<span style="font-size:0.65rem; color:#38bdf8; margin-left:2px;">(+${p.provPts})</span>` : '';
+
+    return `<tr>
+      <td style="font-weight:800; color:#cbd5e1;">${hasPlayed ? (idx + 1) : '-'}</td>
+      <td class="player-leaderboard-name">${p.name}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.r1}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.r2}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.r3}</td>
+      <td style="font-weight:700; color:#cbd5e1;">${p.r4}</td>
+      <td style="font-weight:800;">${p.holesCompleted > 0 ? p.grandTotal : '-'}</td>
+      <td style="font-weight:800; color:${relColor};">${p.holesCompleted > 0 ? p.relToParStr : '-'}</td>
+      <td style="font-weight:800; color:#fef08a;">${p.points} PTS ${provBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function endEvent() {
+  if (!confirm("Finalize week and award points (Position Points + Tag Cut Bonuses)?\n\nNote: Players who did not complete all 4 rounds (72 holes) receive 0 points.")) return;
+
+  const venue = document.getElementById('venue-name').value || "Unknown Venue";
+  const parInputs = document.querySelectorAll('.par-input');
+
+  const cutBonusMap = {
+    'cc-a': 20, 'cc-b': 18, 'cc-c': 16, 'cc-d': 14, 'cc-e': 12,
+    'cc-f': 10, 'cc-g': 8,  'cc-h': 6,  'cc-i': 4,  'cc-j': 2
+  };
+
+  const getPlayerTag = (p) => {
+    const raw = String(p.linkLabel || p.tag || '').toLowerCase();
+    const match = raw.match(/cc-?[a-j]/i);
+    if (match) {
+      const letter = match[0].replace(/[^a-z]/gi, '').slice(-1);
+      return 'cc-' + letter;
+    }
+    return '';
+  };
+
+  const eventStandings = window.players.map(p => {
+    let grandTotal = 0;
+    let relToParNum = 0;
+    let completedHoles = 0;
+
+    [1, 2, 3, 4].forEach(rd => {
+      getRoundScores(p, rd).forEach((s, hIdx) => {
+        const score = parseInt(s);
+        const par = parseInt(parInputs[hIdx]?.value) || 4;
+        if (!isNaN(score) && score > 0) {
+          grandTotal += score;
+          relToParNum += (score - par);
+          completedHoles++;
+        }
+      });
+    });
+
+    const tagKey = getPlayerTag(p);
+
+    return { 
+      name: p.name,
+      tagKey: tagKey,
+      grandTotal: grandTotal, 
+      relToParNum: relToParNum,
+      completedHoles: completedHoles,
+      madeCut: completedHoles === 72
+    };
+  })
+  .filter(p => p.completedHoles > 0)
+  .sort((a, b) => a.relToParNum - b.relToParNum || a.grandTotal - b.grandTotal);
+
+  const pointDistribution = [25, 15, 10, 5];
+  let pointsAppliedCount = 0;
+
+  const rankingsWithPoints = eventStandings.map((p) => {
+    let pts = 0;
+
+    if (p.madeCut) {
+      const posPts = pointDistribution[pointsAppliedCount] || 0;
+      pointsAppliedCount++;
+
+      const bonusPts = cutBonusMap[p.tagKey] || 0;
+      pts = posPts + bonusPts;
+    }
+
+    // Accumulate season points
+    window.seasonPoints[p.name] = (window.seasonPoints[p.name] || 0) + pts;
+
+    let relStr = p.relToParNum < 0 ? `${p.relToParNum}` : (p.relToParNum > 0 ? `+${p.relToParNum}` : 'E');
+
+    const playerObj = window.players.find(pl => pl.name === p.name);
+    let holeScores = [];
+    if (playerObj) {
+      [1, 2, 3, 4].forEach(rd => {
+        const rdScores = getRoundScores(playerObj, rd);
+        rdScores.forEach((s, hIdx) => {
+          const par = parseInt(parInputs[hIdx]?.value) || 4;
+          if (s) holeScores.push({ score: s, par: par });
+        });
+      });
+    }
+
+    return { 
+      name: p.name, 
+      score: p.grandTotal, 
+      relToPar: relStr, 
+      pointsAllocated: pts,
+      status: p.madeCut ? 'FINISHED' : 'MC',
+      holeScores: holeScores
+    };
+  });
+
+  // Archive event
+  window.leagueHistory.push({ 
+    title: `Week ${window.leagueHistory.length + 1} - ${venue}`, 
+    rankings: rankingsWithPoints 
+  });
+
+  // Reset current active scores for next week
+  window.players.forEach(p => {
+    p.r1Scores = Array(18).fill('');
+    p.r2Scores = Array(18).fill('');
+    p.r3Scores = Array(18).fill('');
+    p.r4Scores = Array(18).fill('');
+    p.provisionalPoints = 0;
+  });
+
+  document.getElementById('venue-name').value = '';
+  
+  if (typeof window.saveState === 'function') window.saveState();
+  renderPlayers();
+  renderHistory();
+  updateIndividualLeaderboard();
+  updateFinishesLeaderboard();
+  
+  alert("Event Finalized! Position & Cut Bonus points awarded.");
+}
+
+function exportData() {
+  const state = { players: window.players, seasonPoints: window.seasonPoints, leagueHistory: window.leagueHistory, venueName: document.getElementById('venue-name').value };
+  const blob = new Blob([JSON.stringify(state)], {type: "application/json"});
+  const a = document.createElement('a'); 
+  a.href = URL.createObjectURL(blob);
+  a.download = `lst74_league_backup.json`; 
+  a.click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try { 
+      applyState(JSON.parse(e.target.result)); 
+      if (typeof window.saveState === 'function') window.saveState(); 
+      alert("Imported Successfully!"); 
+    } catch (err) { 
+      alert("Invalid JSON file."); 
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetScores() {
+  const choice = confirm("Click OK to start a NEW SEASON (Keep players, clear scores/history).\nClick CANCEL to wipe EVERYTHING.");
+  if (choice) {
+    window.players.forEach(p => {
+      p.r1Scores = Array(18).fill('');
+      p.r2Scores = Array(18).fill('');
+      p.r3Scores = Array(18).fill('');
+      p.r4Scores = Array(18).fill('');
+    });
+    window.seasonPoints = {};
+    document.getElementById('venue-name').value = '';
+  } else {
+    if(confirm("Delete ALL data entirely?")) {
+      window.players = []; 
+      window.seasonPoints = {}; 
+      window.leagueHistory = [];
+      if (typeof window.saveState === 'function') window.saveState();
+      location.reload();
+      return;
+    }
+  }
+  if (typeof window.saveState === 'function') window.saveState(); 
+  renderPlayers(); 
+  renderHistory();
+}
+</script>
+
+<!-- Firebase Module Script -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBAvdlZalJw_gN9aKajI6Ya7zO_qqwWdS4",
+    authDomain: "tcg-amigo-s.firebaseapp.com",
+    databaseURL: "https://tcg-amigo-s-default-rtdb.europe-west1.firebasedatabase.app/",
+    projectId: "tcg-amigo-s",
+    storageBucket: "tcg-amigo-s.firebasestorage.app",
+    messagingSenderId: "641935802517",
+    appId: "1:641935802517:web:ecaee13f60319f08299b9c",
+    measurementId: "G-NQY8JFMQSC"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+  const leagueRef = ref(db, 'leagueData');
+
+  // A single shared "admin" login is enough for a friends' league.
+  // This is just an identifier for Firebase Auth - it doesn't need to be a real inbox.
+  const ADMIN_EMAIL = "admin@los4amigos.app";
+
+  let isUpdatingFromFirebase = false;
+  let hasReceivedFirebaseData = false; // guards against saving an empty state before the real data has loaded
+
+  onAuthStateChanged(auth, (user) => {
+    if (typeof window.applyAdminUI === 'function') window.applyAdminUI(!!user);
+  });
+
+  window.adminLogin = function() {
+    const pwd = prompt("Enter admin password:");
+    if (!pwd) return;
+    signInWithEmailAndPassword(auth, ADMIN_EMAIL, pwd)
+      .catch((err) => {
+        alert("Login failed: incorrect password.");
+        console.error(err);
+      });
+  };
+
+  window.adminLogout = function() {
+    signOut(auth);
+  };
+
+  // Realtime Listener
+  onValue(leagueRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      isUpdatingFromFirebase = true;
+      if (typeof window.applyState === 'function') {
+        window.applyState(data);
+      }
+      isUpdatingFromFirebase = false;
+    }
+    hasReceivedFirebaseData = true; // fires on first response too, even if the DB is genuinely empty
+  });
+
+  // Attach saveState to window object
+  window.saveState = function() {
+    if (isUpdatingFromFirebase) return;
+    if (!auth.currentUser) return; // not logged in - nothing to save, rules would reject it anyway
+    if (!hasReceivedFirebaseData) {
+      console.warn("Save blocked: still waiting for the initial data load from Firebase.");
+      return;
+    }
+
+    const state = { 
+      players: window.players || [], 
+      seasonPoints: window.seasonPoints || {}, 
+      leagueHistory: window.leagueHistory || [],
+      venueName: document.getElementById('venue-name')?.value || '',
+      pars: Array.from(document.querySelectorAll('.par-input')).map(i => i.value)
+    };
+
+    set(leagueRef, state).catch((err) => {
+      console.error("Save failed:", err);
+      alert("Could not save - you may have been logged out. Please log in again.");
+    });
+  };
+</script>
+</body>
+</html>
