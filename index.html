@@ -1491,11 +1491,43 @@ function openPlayerProfile(playerName) {
   const player = window.players?.find(p => p.name === playerName);
   if (!player) return;
 
-  let totalEvents = 0, wins = 0, runnerUp = 0, third = 0, mcCount = 0;
+  let totalEvents = 0, completedRounds = 0, totalScoreSum = 0;
+  let wins = 0, runnerUp = 0, third = 0, mcCount = 0;
   let eagles = 0, birdies = 0, bogies = 0;
   let historyRowsHtml = '';
 
-  // 1. PROCESS ARCHIVED EVENTS
+  // Track global minimums for highlighting
+  let globalLowestRound = Infinity;
+  let globalLowestEventTotal = Infinity;
+
+  // PASS 1: Calculate global lowest round & lowest 72-hole event total
+  const inspectScores = (entry) => {
+    if (entry.holeScores && entry.holeScores.length > 0) {
+      for (let r = 0; r < 4; r++) {
+        const rHoles = entry.holeScores.slice(r * 18, (r + 1) * 18);
+        if (rHoles.length === 18 && rHoles.every(h => !isNaN(parseInt(h.score)) && parseInt(h.score) > 0)) {
+          const rdSum = rHoles.reduce((acc, h) => acc + parseInt(h.score), 0);
+          if (rdSum < globalLowestRound) globalLowestRound = rdSum;
+        }
+      }
+    }
+    // Check lowest full event score (made cut / finished all 72 holes)
+    if (entry.status !== 'MC' && entry.score && entry.score > 0) {
+      if (entry.score < globalLowestEventTotal) {
+        globalLowestEventTotal = entry.score;
+      }
+    }
+  };
+
+  // Inspect archived events
+  if (window.leagueHistory) {
+    window.leagueHistory.forEach(event => {
+      const entry = event.rankings?.find(r => r.name === playerName);
+      if (entry) inspectScores(entry);
+    });
+  }
+
+  // PASS 2: Build table rows and apply green highlight badges
   if (window.leagueHistory && window.leagueHistory.length > 0) {
     window.leagueHistory.forEach(event => {
       if (!event.rankings) return;
@@ -1512,9 +1544,8 @@ function openPlayerProfile(playerName) {
           else if (idx === 2) third++;
         }
 
-        // Parse hole stats & compute rounds R1..R4
-        let rTotals = ['-', '-', '-', '-'];
-        if (entry.holeScores && entry.holeScores.length > 0) {
+        // Count eagles, birdies, bogies
+        if (entry.holeScores) {
           entry.holeScores.forEach(h => {
             const score = parseInt(h.score);
             const par = parseInt(h.par) || 4;
@@ -1525,28 +1556,52 @@ function openPlayerProfile(playerName) {
               else if (diff === 1) bogies++;
             }
           });
+        }
 
-          // Break 18-hole score blocks into R1, R2, R3, R4 totals
+        // Parse individual round totals
+        let rTotals = ['-', '-', '-', '-'];
+        if (entry.holeScores && entry.holeScores.length > 0) {
           for (let r = 0; r < 4; r++) {
             const rHoles = entry.holeScores.slice(r * 18, (r + 1) * 18);
             if (rHoles.length === 18 && rHoles.every(h => !isNaN(parseInt(h.score)) && parseInt(h.score) > 0)) {
-              rTotals[r] = rHoles.reduce((acc, h) => acc + parseInt(h.score), 0);
+              const rdSum = rHoles.reduce((acc, h) => acc + parseInt(h.score), 0);
+              rTotals[r] = rdSum;
+              completedRounds++;
+              totalScoreSum += rdSum;
             }
           }
         }
 
+        // Helper to format green highlight badge for single round
+        const formatRdCell = (scoreVal) => {
+          if (scoreVal === '-') return '-';
+          if (scoreVal === globalLowestRound) {
+            return `<strong style="color:#4ade80; font-weight:800; background:rgba(74,222,128,0.2); padding:2px 6px; border-radius:4px; border: 1px solid rgba(74,222,128,0.4);">${scoreVal}</strong>`;
+          }
+          return scoreVal;
+        };
+
+        // Helper to format green highlight badge for lowest event total
+        const formatTotCell = (totVal) => {
+          if (!totVal || totVal === '-') return '-';
+          if (totVal === globalLowestEventTotal) {
+            return `<strong style="color:#4ade80; font-weight:800; background:rgba(74,222,128,0.2); padding:2px 6px; border-radius:4px; border: 1px solid rgba(74,222,128,0.4);">${totVal}</strong>`;
+          }
+          return totVal;
+        };
+
         const relColor = entry.relToPar?.startsWith('-') ? '#f87171' : (entry.relToPar === 'E' ? '#4ade80' : '#cbd5e1');
 
         historyRowsHtml += `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); height:28px;">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); height:30px;">
             <td style="text-align:left; padding-left:8px; font-weight:700; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${event.title || 'Archived Event'}
             </td>
-            <td style="text-align:center; color:#cbd5e1;">${rTotals[0]}</td>
-            <td style="text-align:center; color:#cbd5e1;">${rTotals[1]}</td>
-            <td style="text-align:center; color:#cbd5e1;">${rTotals[2]}</td>
-            <td style="text-align:center; color:#cbd5e1;">${rTotals[3]}</td>
-            <td style="text-align:center; font-weight:800; color:#fff;">${entry.score || '-'}</td>
+            <td style="text-align:center; color:#cbd5e1;">${formatRdCell(rTotals[0])}</td>
+            <td style="text-align:center; color:#cbd5e1;">${formatRdCell(rTotals[1])}</td>
+            <td style="text-align:center; color:#cbd5e1;">${formatRdCell(rTotals[2])}</td>
+            <td style="text-align:center; color:#cbd5e1;">${formatRdCell(rTotals[3])}</td>
+            <td style="text-align:center; font-weight:800; color:#fff;">${formatTotCell(entry.score)}</td>
             <td style="text-align:center; font-weight:800; color:${relColor};">${entry.relToPar || '-'}</td>
           </tr>
         `;
@@ -1554,7 +1609,7 @@ function openPlayerProfile(playerName) {
     });
   }
 
-  // 2. PROCESS CURRENT ACTIVE WEEK
+  // 3. PROCESS CURRENT ACTIVE WEEK
   const parInputs = document.querySelectorAll('.par-input');
   let currentRounds = ['-', '-', '-', '-'];
   let currentGrandTotal = 0;
@@ -1574,38 +1629,50 @@ function openPlayerProfile(playerName) {
       currentRounds[rIdx] = rdSum;
       currentGrandTotal += rdSum;
       currentCompletedHoles += 18;
+      completedRounds++;
+      totalScoreSum += rdSum;
     }
   });
 
   if (currentCompletedHoles > 0) {
     totalEvents++;
-    const currentCourseName = document.getElementById('course-name')?.value || 'Current Event';
+    const currentCourseName = document.getElementById('venue-name')?.value || 'Current Event';
     const totalPar = Array.from(parInputs).reduce((acc, inp) => acc + (parseInt(inp.value) || 4), 0) * (currentCompletedHoles / 18);
     const diff = currentGrandTotal - totalPar;
     const relStr = diff < 0 ? `${diff}` : (diff === 0 ? 'E' : `+${diff}`);
     const relColor = diff < 0 ? '#f87171' : (diff === 0 ? '#4ade80' : '#cbd5e1');
 
+    const formatCurrentCell = (scoreVal) => {
+      if (scoreVal === '-') return '-';
+      if (scoreVal === globalLowestRound) {
+        return `<strong style="color:#4ade80; font-weight:800; background:rgba(74,222,128,0.2); padding:2px 6px; border-radius:4px; border: 1px solid rgba(74,222,128,0.4);">${scoreVal}</strong>`;
+      }
+      return scoreVal;
+    };
+
     historyRowsHtml = `
-      <tr style="border-bottom:1px solid rgba(255,255,255,0.05); height:28px; background:rgba(56,189,248,0.05);">
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05); height:30px; background:rgba(56,189,248,0.05);">
         <td style="text-align:left; padding-left:8px; font-weight:700; color:#38bdf8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
           ${currentCourseName} *
         </td>
-        <td style="text-align:center; color:#cbd5e1;">${currentRounds[0]}</td>
-        <td style="text-align:center; color:#cbd5e1;">${currentRounds[1]}</td>
-        <td style="text-align:center; color:#cbd5e1;">${currentRounds[2]}</td>
-        <td style="text-align:center; color:#cbd5e1;">${currentRounds[3]}</td>
+        <td style="text-align:center; color:#cbd5e1;">${formatCurrentCell(currentRounds[0])}</td>
+        <td style="text-align:center; color:#cbd5e1;">${formatCurrentCell(currentRounds[1])}</td>
+        <td style="text-align:center; color:#cbd5e1;">${formatCurrentCell(currentRounds[2])}</td>
+        <td style="text-align:center; color:#cbd5e1;">${formatCurrentCell(currentRounds[3])}</td>
         <td style="text-align:center; font-weight:800; color:#fff;">${currentGrandTotal}</td>
         <td style="text-align:center; font-weight:800; color:${relColor};">${relStr}</td>
       </tr>
     ` + historyRowsHtml;
   }
 
-  // Fallback if no history is recorded
+  // Calculate Average Score
+  const avgScore = completedRounds > 0 ? (totalScoreSum / completedRounds).toFixed(1) : '-';
+
   if (!historyRowsHtml) {
     historyRowsHtml = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#94a3b8;">No event history available.</td></tr>`;
   }
 
-  // Update Points and Populate Modal Elements
+  // Update Modal Values
   const bankedPts = window.seasonPoints?.[player.name] || 0;
   const weekPts = player.provisionalPoints || 0;
 
@@ -1613,6 +1680,8 @@ function openPlayerProfile(playerName) {
   document.getElementById('modal-player-tag').innerText = player.linkLabel || player.tag || 'TOUR MEMBER';
   document.getElementById('modal-pts').innerText = `${bankedPts + weekPts} PTS`;
   document.getElementById('modal-events').innerText = totalEvents;
+  document.getElementById('modal-rounds').innerText = completedRounds;
+  document.getElementById('modal-avg-score').innerText = avgScore;
   document.getElementById('modal-podiums').innerText = `${wins}W / ${wins + runnerUp + third}P`;
   document.getElementById('modal-mc').innerText = mcCount;
   document.getElementById('modal-eagles').innerText = eagles;
