@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Los 4 Amigos</title>
+  <title>LST Grid Munchers</title>
   <style>
     :root {
       --primary-dark: #334155;
@@ -137,8 +137,23 @@
     }
     #backToTop.show { opacity: 1; visibility: visible; }
 
-    #logo-container { text-align: center; padding: 0; width: 100%; overflow: hidden; }
-    #logo-container img { width: 100%; height: auto; display: block; max-width: 400px; margin: 0 auto; }
+    #logo-container {
+		  width: 100vw;
+		  position: relative;
+		  left: 50%;
+		  right: 50%;
+		  margin-left: -50vw;
+		  margin-right: -50vw;
+		  padding: 0;
+		  overflow: hidden;
+		}
+
+		#logo-container img {
+		  width: 100%;
+		  height: auto;
+		  display: block;
+		  object-fit: cover; /* Ensures the image fills the space cleanly without distorting */
+		}
     #scorecard thead th { position: sticky; top: 0; z-index: 10; }
 	
 	/* Player External Link Button */
@@ -299,7 +314,7 @@
 
 <div id="capture-area">
   <div class="header-block">
-    <div class="brand-main">Los 4 Amigos TGCT Challenge</div>
+    <div class="brand-main">LST Grid Munchers Challenge</div>
     <div class="sub-brand">Scorecards</div>
     <input type="text" id="venue-name" class="venue-input" placeholder="ENTER VENUE" oninput="saveState()" readonly>
   </div>
@@ -1539,7 +1554,7 @@ function openPlayerProfile(playerName) {
     }
   });
 
-  // Step B: Build history rows and color low round numbers green
+  // Step B: Build history rows
   if (window.leagueHistory && window.leagueHistory.length > 0) {
     window.leagueHistory.forEach(event => {
       if (!event.rankings) return;
@@ -1579,7 +1594,6 @@ function openPlayerProfile(playerName) {
 
         const relColor = entry.relToPar?.startsWith('-') ? '#f87171' : (entry.relToPar === 'E' ? '#4ade80' : '#cbd5e1');
 
-        // Helper to format cells with green text for low round
         const formatRdCell = (val) => {
           if (val === careerLowRound && val !== Infinity) {
             return `<td style="text-align:center; color:#4ade80; font-weight:900;">${val}</td>`;
@@ -1661,6 +1675,10 @@ function openPlayerProfile(playerName) {
     historyRowsHtml = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#94a3b8;">No event history available.</td></tr>`;
   }
 
+  // Step C: Calculate Made Cut Percentage
+  const madeCuts = totalEvents - mcCount;
+  const cutPct = totalEvents > 0 ? Math.round((madeCuts / totalEvents) * 100) : 0;
+
   const bankedPts = window.seasonPoints?.[player.name] || 0;
   const weekPts = player.provisionalPoints || 0;
 
@@ -1669,14 +1687,18 @@ function openPlayerProfile(playerName) {
   document.getElementById('modal-pts').innerText = `${bankedPts + weekPts} PTS`;
   document.getElementById('modal-events').innerText = totalEvents;
   document.getElementById('modal-podiums').innerText = `${wins}W / ${wins + runnerUp + third}P`;
-  document.getElementById('modal-mc').innerText = mcCount;
+
+  
+  // Displays: "1 (75%)" or change to `${mcCount} (${cutPct}% MADE)` if you prefer extra text
+  document.getElementById('modal-mc').innerText = `${mcCount} (${cutPct}%)`;
+
   document.getElementById('modal-eagles').innerText = eagles;
   document.getElementById('modal-birdies').innerText = birdies;
   document.getElementById('modal-bogies').innerText = bogies;
   document.getElementById('modal-history-body').innerHTML = historyRowsHtml;
 
   modal.style.display = 'flex';
-}
+  }
 
 function closePlayerProfile() {
   const modal = document.getElementById('player-profile-modal');
@@ -1762,7 +1784,7 @@ function resetScores() {
 
   // A single shared "admin" login is enough for a friends' league.
   // This is just an identifier for Firebase Auth - it doesn't need to be a real inbox.
-  const ADMIN_EMAIL = "admin@los4amigos.app";
+  const ADMIN_EMAIL = "admin@gridmunchers.com";
 
   let isUpdatingFromFirebase = false;
   let hasReceivedFirebaseData = false; // guards against saving an empty state before the real data has loaded
@@ -1846,7 +1868,7 @@ function resetScores() {
         <strong id="modal-podiums" style="font-size:1.1rem; color:#38bdf8;">-</strong>
       </div>
       <div style="background:#0f172a; padding:8px; border-radius:6px; text-align:center;">
-        <span style="font-size:0.65rem; color:#94a3b8; display:block;">MISSED CUTS</span>
+        <span style="font-size:0.65rem; color:#94a3b8; display:block;">MISSED CUTS (% MADE)</span>
         <strong id="modal-mc" style="font-size:1.1rem; color:#f87171;">-</strong>
       </div>
     </div>
